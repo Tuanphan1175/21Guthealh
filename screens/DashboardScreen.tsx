@@ -105,7 +105,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
         }]
     };
     try {
-        await persistMealSuggestionsEdge(persistPayload);
+        // await persistMealSuggestionsEdge(persistPayload);
     } catch (e) {
         console.warn("Auto-save failed", e);
     }
