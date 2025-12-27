@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, ComputedTargets, MealType, SuggestionResponse, UserInput, PersistRequest, SuggestionMeal, MealSlot, SnackTiming } from '../types';
 import { calculateDailyNeeds, distributeTargetsByMeal } from '../nutritionService';
 import { getMealSuggestions } from '../geminiService';
-import { persistMealSuggestionsEdge } from '../apiService';
+
 import RecipeCard from '../components/RecipeCard';
 import PhaseIndicator from '../components/PhaseIndicator';
 import GutIcon from '../components/GutIcon';
