@@ -1,6 +1,5 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
-import { invokeGutHealth } from "./apiService";
-
+import { invokeGutHealth } from "./src/apiService";
 type GutHealthResponse = {
   ok: boolean;
   meta: any;
