@@ -1,23 +1,12 @@
-import { PersistRequest } from "./types";
+// apiService.ts (ROOT)
 
-export async function persistMealSuggestionsEdge(payload: PersistRequest) {
-  // Using the project URL provided by the user, targeting the 'persist-meal-suggestions' function
-  const PROJECT_URL = "https://zdqliaurykbomhdxfmjk.supabase.co";
-  const FUNCTION_NAME = "persist-meal-suggestions";
-  const fullUrl = `${PROJECT_URL}/functions/v1/${FUNCTION_NAME}`;
+import { supabase } from "./src/lib/supabaseClient"; 
+// Nếu của Bác nằm ở "./lib/supabaseClient" thì đổi lại đúng path.
 
-  const res = await fetch(fullUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer 2DBB7fPbnzXgLteH3XJc4TYjbME67As1uFbVSPZVIOKFY98vw8SGZD0VLjvWxg2ZX1UtPKY0sY80tKCiZCor7Q=="
-    },
-    body: JSON.stringify(payload)
+export async function invokeGutHealth(body: any) {
+  const { data, error } = await supabase.functions.invoke("guthealth_generate", {
+    body,
   });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`EdgeFunction failed: ${res.status} ${text}`);
-  }
-  return res.json();
+  if (error) throw error;
+  return data;
 }
