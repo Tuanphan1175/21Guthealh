@@ -9,18 +9,20 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-dom": "^19.2.1",
-    "react": "^19.2.1",
     "@google/genai": "^1.31.0",
+    "@remix-run/router": "^1.15.3",
+    "@supabase/supabase-js": "^2.89.0",
     "lucide-react": "^0.555.0",
-    "react-router-dom": "^6.22.3",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "react-router": "^6.22.3",
-    "@remix-run/router": "^1.15.3"
+    "react-router-dom": "^6.22.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
-  }
+  },
+  "packageManager": "pnpm@10.26.0+sha512.3b3f6c725ebe712506c0ab1ad4133cf86b1f4b687effce62a9b38b4d72e3954242e643190fc51fa1642949c735f403debd44f5cb0edd657abe63a8b6a7e1e402"
 }
