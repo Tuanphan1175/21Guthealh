@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, ActivityLevel, Sex } from '../types';
 import { ChevronRight, ChevronLeft, Ruler, Weight, User, Activity, Target, AlertTriangle, Utensils, Check, Plus, X, Edit2, Sparkles, Ban } from 'lucide-react';
 import { COMMON_CONDITIONS, COMMON_GOALS, COMMON_RESTRICTIONS, GOAL_DESCRIPTIONS } from '../constants';
+import { ensureUsersTableAndSaveProfile } from '../utils/supabaseUtils';
 
 interface WizardProps {
   onComplete: (profile: UserProfile) => void;
@@ -41,7 +41,7 @@ const OnboardingWizard: React.FC<WizardProps> = ({ onComplete }) => {
 
   const navigate = useNavigate();
 
-  const handleNext = () => {
+  const handleNext = async () => {
     // Sync custom goal before proceeding
     const finalProfile = { ...profile };
     if (isCustomGoal && customGoalText.trim()) {
@@ -55,7 +55,14 @@ const OnboardingWizard: React.FC<WizardProps> = ({ onComplete }) => {
     if (step < 4) {
       setStep(step + 1);
     } else {
-      onComplete(finalProfile);
+      // Call the Supabase utility function here
+      try {
+        await ensureUsersTableAndSaveProfile(finalProfile);
+        onComplete(finalProfile);
+      } catch (error) {
+        console.error("Không thể lưu hồ sơ người dùng:", error);
+        // Optionally, show a toast notification to the user about the error
+      }
     }
   };
 
