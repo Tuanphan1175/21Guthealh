@@ -1,30 +1,20 @@
 import { supabase } from '../lib/supabaseClient';
-import { UserProfile } from '../types';
+import { UserProfile } from '../../types'; // Adjust path to types.ts
 
 export async function ensureUsersTableAndSaveProfile(profile: UserProfile) {
   try {
-    // Check if 'users' table exists and create if not.
-    // Supabase's `from().insert()` will create the table if it doesn't exist
-    // when using the RLS policies correctly, but for explicit schema management
-    // and ensuring 'start_date', we might need a more robust check or rely on
-    // Supabase migrations/dashboard for table creation.
-    // For this exercise, we'll assume the table is created via dashboard or migration
-    // and focus on inserting data.
-    // In a real-world scenario, you'd typically manage schema via migrations.
-
-    // For demonstration, we'll just insert. If the table doesn't exist,
-    // this insert will likely fail unless RLS is configured to allow table creation,
-    // which is not standard.
-    // A more robust solution would involve checking metadata or using a server-side function
-    // to create the table if it doesn't exist.
-    // For now, we'll proceed with insert and assume 'users' table exists with 'start_date'.
+    // In a real-world scenario, you'd typically manage schema via migrations or Supabase dashboard.
+    // For this exercise, we'll assume the 'users' table exists with the necessary columns.
+    // The 'start_date' column should be of type 'date' in Supabase.
 
     const { data, error } = await supabase
       .from('users')
       .insert([
         { 
-          ...profile.demographics,
-          ...profile.anthropometrics,
+          sex: profile.demographics.sex,
+          age_years: profile.demographics.age_years,
+          height_cm: profile.anthropometrics.height_cm,
+          weight_kg: profile.anthropometrics.weight_kg,
           activity_level: profile.activity.level,
           primary_goal: profile.goals.primary_goal,
           health_conditions_flags: profile.health_conditions.flags,
