@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserProfile, ActivityLevel, Sex } from '../types';
 import { ChevronRight, ChevronLeft, Ruler, Weight, User, Activity, Target, AlertTriangle, Utensils, Check, Plus, X, Edit2, Sparkles, Ban } from 'lucide-react';
-import { COMMON_CONDITIONS, COMMON_GOALS, COMMON_RESTRICTIONS, GOAL_DESCRIPTIONS } from '../constants';
-import { ensureUsersTableAndSaveProfile } from '../utils/supabaseUtils';
+import { COMMON_CONDITIONS, COMMON_GOALS, COMMON_RESTRICTIONS, GOAL_DESCRIPTIONS } from "../constants";
+import { ensureUsersTableAndSaveProfile } from "../src/utils/supabaseUtils";
 
 interface WizardProps {
   onComplete: (profile: UserProfile) => void;
