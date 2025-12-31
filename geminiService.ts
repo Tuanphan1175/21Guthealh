@@ -3,7 +3,8 @@ import { UserInput, SuggestionResponse, SuggestionMeal, UserProfile, ComputedTar
 import { SYSTEM_INSTRUCTION } from "./constants";
 
 // Lấy API Key từ biến môi trường
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const API_KEY = "AIzaSyDabUGaN9jxTgT6S8YHm8JRaTWaIgja-u0"; // Đã thay đổi API Key trực tiếp
+console.log("CHECK KEY MỚI: ", API_KEY); // Thêm dòng console.log để kiểm tra
 
 if (!API_KEY) {
   throw new Error("Missing VITE_GEMINI_API_KEY environment variable.");
@@ -78,8 +79,8 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
         throw new Error("Missing user profile or nutritional targets for Gemini API call.");
       }
 
-      const conditions = input.conditions.length > 0 ? `Tình trạng sức khỏe: ${input.conditions.join(', ')}.` : '';
-      const restrictions = input.dietary_restrictions.length > 0 ? `Hạn chế ăn uống: ${input.dietary_restrictions.join(', ')}.` : '';
+      const conditions = Object.keys(userProfile.health_conditions.flags).filter(k => userProfile.health_conditions.flags[k]);
+      const restrictions = Object.keys(userProfile.dietary_preferences.restrictions).filter(k => userProfile.dietary_preferences.restrictions[k]);
       const avoidIngredients = userProfile.dietary_preferences.avoid_ingredients.length > 0 ? `Tránh các nguyên liệu: ${userProfile.dietary_preferences.avoid_ingredients.join(', ')}.` : '';
       const personalNote = userProfile.personal_note ? `Lưu ý cá nhân: ${userProfile.personal_note}.` : '';
 
