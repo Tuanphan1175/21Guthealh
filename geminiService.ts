@@ -3,8 +3,7 @@ import { UserInput, SuggestionResponse, SuggestionMeal, UserProfile, ComputedTar
 import { SYSTEM_INSTRUCTION } from "./constants";
 
 // Lấy API Key từ biến môi trường
-const API_KEY = "AIzaSyDabUGaN9jxTgT6S8YHm8JRaTWaIgja-u0"; // Đã thay đổi API Key trực tiếp
-console.log("CHECK KEY MỚI: ", API_KEY); // Thêm dòng console.log để kiểm tra
+const API_KEY = "AIzaSyDabUGaN9jxTgT6S8YHm8JRaTWaIgja-u0"; // API Key mới của bạn
 
 if (!API_KEY) {
   throw new Error("Missing VITE_GEMINI_API_KEY environment variable.");
@@ -63,12 +62,12 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string): Suggestion
 }
 
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
-  const modelsToTry = ["gemini-1.5-flash-001", "gemini-pro"];
+  const modelsToTry = ["gemini-2.5-flash", "gemini-pro"]; // Đã thay đổi tên model ưu tiên
   let currentModel: GenerativeModel | null = null;
   let lastError: any = null;
 
   for (const modelName of modelsToTry) {
-    console.log(`Đang thử gọi Gemini với model: ${modelName}...`);
+    console.log(`Model: ${modelName} | Key: ${API_KEY.substring(0, 4)}...${API_KEY.substring(API_KEY.length - 4)}`); // Log để kiểm tra
     try {
       currentModel = genAI.getGenerativeModel({ model: modelName });
 
@@ -79,8 +78,8 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
         throw new Error("Missing user profile or nutritional targets for Gemini API call.");
       }
 
-      const conditions = Object.keys(userProfile.health_conditions.flags).filter(k => userProfile.health_conditions.flags[k]);
-      const restrictions = Object.keys(userProfile.dietary_preferences.restrictions).filter(k => userProfile.dietary_preferences.restrictions[k]);
+      const conditions = input.conditions.length > 0 ? `Tình trạng sức khỏe: ${input.conditions.join(', ')}.` : '';
+      const restrictions = input.dietary_restrictions.length > 0 ? `Hạn chế ăn uống: ${input.dietary_restrictions.join(', ')}.` : '';
       const avoidIngredients = userProfile.dietary_preferences.avoid_ingredients.length > 0 ? `Tránh các nguyên liệu: ${userProfile.dietary_preferences.avoid_ingredients.join(', ')}.` : '';
       const personalNote = userProfile.personal_note ? `Lưu ý cá nhân: ${userProfile.personal_note}.` : '';
 
