@@ -10,7 +10,7 @@ if (!API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Đã thay đổi tên model
 
 // Hàm giả định để tạo một SuggestionResponse từ văn bản
 function parseGeminiResponseToSuggestionResponse(geminiText: string): SuggestionResponse {
