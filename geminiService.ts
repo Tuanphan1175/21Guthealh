@@ -71,23 +71,7 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
       const avoidIngredients = userProfile.dietary_preferences.avoid_ingredients.length > 0 ? `Tránh các nguyên liệu: ${userProfile.dietary_preferences.avoid_ingredients.join(', ')}.` : '';
       const personalNote = userProfile.personal_note ? `Lưu ý cá nhân: ${userProfile.personal_note}.` : '';
 
-      const prompt = `
-        Bạn là chuyên gia dinh dưỡng cao cấp cho chương trình 21 ngày phục hồi đường ruột.
-        Dựa trên hồ sơ người dùng sau:
-        - Giới tính: ${userProfile.demographics.sex === 'male' ? 'Nam' : 'Nữ'}
-        - Tuổi: ${userProfile.demographics.age_years}
-        - Cân nặng: ${userProfile.anthropometrics.weight_kg} kg
-        - Mục tiêu chính: ${userProfile.goals.primary_goal}.
-        ${conditions}
-        ${restrictions}
-        ${avoidIngredients}
-        ${personalNote}
-
-        Hãy tạo một thực đơn cho Ngày 1, bao gồm 3 bữa chính (Sáng, Trưa, Tối) và 1 bữa phụ.
-        BẮT BUỘC tuân thủ NGHIÊM NGẶT danh sách thực phẩm "KHÔNG NÊN ĂN" (CẤM) và "QUY ĐỊNH ĐẶC BIỆT CỦA CHƯƠNG TRÌNH" đã được cung cấp trong SYSTEM_INSTRUCTION.
-        
-        Trả về kết quả dưới dạng JSON thuần (không có markdown ```json) theo cấu trúc sau:
-        {
+      const jsonFormat = `{
           "advice": "Lời khuyên ngắn gọn cho thực đơn này dựa trên hồ sơ người dùng và mục tiêu phục hồi đường ruột.",
           "meals": [
             {
@@ -111,7 +95,25 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
               "calories": "Số calo ước tính"
             }
           ]
-        }
+        }`;
+
+      const prompt = `
+        Bạn là chuyên gia dinh dưỡng cao cấp cho chương trình 21 ngày phục hồi đường ruột.
+        Dựa trên hồ sơ người dùng sau:
+        - Giới tính: ${userProfile.demographics.sex === 'male' ? 'Nam' : 'Nữ'}
+        - Tuổi: ${userProfile.demographics.age_years}
+        - Cân nặng: ${userProfile.anthropometrics.weight_kg} kg
+        - Mục tiêu chính: ${userProfile.goals.primary_goal}.
+        ${conditions}
+        ${restrictions}
+        ${avoidIngredients}
+        ${personalNote}
+
+        Hãy tạo một thực đơn cho Ngày 1, bao gồm 3 bữa chính (Sáng, Trưa, Tối) và 1 bữa phụ.
+        BẮT BUỘC tuân thủ NGHIÊM NGẶT danh sách thực phẩm "KHÔNG NÊN ĂN" (CẤM) và "QUY ĐỊNH ĐẶC BIỆT CỦA CHƯƠNG TRÌNH" đã được cung cấp trong SYSTEM_INSTRUCTION.
+        
+        Trả về kết quả dưới dạng JSON thuần (không có markdown \`\`\`json) theo cấu trúc sau:
+        ${jsonFormat}
       `;
 
       const result = await currentModel.generateContent(prompt);
