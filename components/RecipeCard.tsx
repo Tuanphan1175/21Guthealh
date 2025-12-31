@@ -6,7 +6,7 @@ import {
   Check, UtensilsCrossed, Leaf, Egg, Droplets, 
   Wheat, Pizza, Download 
 } from 'lucide-react';
-import { generateMealImage } from '../geminiService'; // Giữ lại nếu bạn muốn dùng hàm này cho mục đích khác
+import { generateMealImage } from '../geminiService';
 import GutIcon from './GutIcon';
 
 interface RecipeCardProps {
@@ -69,23 +69,27 @@ const getUnsplashSearchKeyword = (mealName: string): string => {
 };
 
 const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdate, loading: parentLoading }) => {
-  // Tạo URL ảnh ngẫu nhiên từ Unsplash dựa trên tên món ăn
   const unsplashKeyword = getUnsplashSearchKeyword(meal.recipe_name);
-  const defaultImageUrl = `https://source.unsplash.com/featured/?${unsplashKeyword}`;
+  const defaultUnsplashUrl = `https://source.unsplash.com/featured/?${unsplashKeyword}`;
+  const fallbackImageUrl = "/default-meal.png"; // Đường dẫn đến ảnh dự phòng trong thư mục public
 
-  const [imageUrl, setImageUrl] = useState<string>(meal.image_url || defaultImageUrl);
-  const [generatingImage, setGeneratingImage] = useState(false); // Giữ lại nếu muốn dùng cho chức năng tạo ảnh AI sau này
+  const [imageUrl, setImageUrl] = useState<string>(meal.image_url || defaultUnsplashUrl);
+  const [imageError, setImageError] = useState<boolean>(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const n = meal.nutrition_estimate;
   
-  // Hàm này sẽ không còn gọi generateMealImage từ geminiService nữa
-  // Thay vào đó, nó sẽ tạo một URL Unsplash mới để làm mới ảnh
   const handleGenerateImage = () => {
-    // Tạo một URL mới với timestamp để buộc trình duyệt tải lại ảnh
-    const newUnsplashUrl = `${defaultImageUrl}&${Date.now()}`;
+    setImageError(false); // Reset lỗi khi tạo ảnh mới
+    const newUnsplashUrl = `${defaultUnsplashUrl}&${Date.now()}`; // Thêm timestamp để làm mới cache
     setImageUrl(newUnsplashUrl);
     if (onUpdate) {
       onUpdate({ ...meal, image_url: newUnsplashUrl });
     }
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageUrl(fallbackImageUrl); // Sử dụng ảnh dự phòng khi có lỗi
   };
 
   const getOverallScore = () => {
@@ -114,12 +118,13 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
     <div className="bg-white border-2 border-slate-200 rounded-[2.5rem] overflow-hidden shadow-md hover:shadow-xl hover:border-indigo-200 transition-all duration-300">
       {/* Image Section */}
       <div className="relative h-72 sm:h-[32rem] bg-slate-100 flex items-center justify-center overflow-hidden border-b-2 border-slate-100">
-        {imageUrl ? (
+        {imageUrl && !imageError ? (
           <div className="relative w-full h-full group">
             <img 
               src={imageUrl} 
               alt={meal.recipe_name} 
               className="w-full h-full object-cover animate-in fade-in duration-700"
+              onError={handleImageError} // Bắt lỗi tải ảnh
             />
             
             {/* Overlay Actions for existing image */}
@@ -150,7 +155,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
             <div className="space-y-3">
               <h4 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">Hình ảnh trực quan</h4>
               <p className="text-xs font-bold text-slate-500 max-w-[240px] mx-auto leading-relaxed">
-                Hệ thống sẽ phác họa món ăn dựa trên nguyên liệu thật từ công thức của bạn.
+                {imageError ? "Không thể tải ảnh. Đang hiển thị ảnh dự phòng." : "Hệ thống sẽ phác họa món ăn dựa trên nguyên liệu thật từ công thức của bạn."}
               </p>
             </div>
             <button
@@ -167,7 +172,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
         {/* Loading Overlay */}
         {generatingImage && (
           <div className="absolute inset-0 bg-white/90 backdrop-blur-lg flex flex-col items-center justify-center gap-6 z-10 animate-in fade-in duration-300">
-            <Loader2 size={64} className="text-indigo-600 animate-spin" />
+            <Loader2 size={64} className="mx-auto text-indigo-600 animate-spin" />
             <div className="text-center space-y-2">
               <p className="text-sm font-black text-indigo-900 uppercase tracking-[0.2em] animate-pulse">Đang phác họa món ăn...</p>
               <p className="text-xs font-bold text-slate-500">Quá trình này có thể mất vài giây</p>
@@ -213,7 +218,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
               }`}
               title="Tạo ảnh món ăn"
             >
-              <RefreshCw size={24} /> {/* Thay Sparkles bằng RefreshCw để làm mới ảnh */}
+              {generatingImage ? <Loader2 size={24} className="animate-spin" /> : <Sparkles size={24} />}
             </button>
 
             <button
