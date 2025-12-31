@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SuggestionMeal } from '../types';
 import { 
@@ -7,7 +6,7 @@ import {
   Check, UtensilsCrossed, Leaf, Egg, Droplets, 
   Wheat, Pizza, Download 
 } from 'lucide-react';
-import { generateMealImage } from '../geminiService';
+import { generateMealImage } from '../geminiService'; // Giữ lại nếu bạn muốn dùng hàm này cho mục đích khác
 import GutIcon from './GutIcon';
 
 interface RecipeCardProps {
@@ -49,24 +48,43 @@ const IngredientIcon: React.FC<{ name: string }> = ({ name }) => {
   return <div className="p-1.5 bg-slate-200 text-slate-700 rounded-lg border border-slate-300"><Check size={14} /></div>;
 };
 
+// Hàm chuyển đổi tiếng Việt có dấu sang tiếng Anh không dấu và thêm từ khóa chung
+const getUnsplashSearchKeyword = (mealName: string): string => {
+  let keyword = mealName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .trim()
+    .replace(/\s+/g, ","); // Thay khoảng trắng bằng dấu phẩy cho Unsplash
+
+  // Thêm các từ khóa chung để tăng khả năng tìm thấy ảnh phù hợp
+  if (!keyword.includes("food")) keyword += ",food";
+  if (!keyword.includes("healthy")) keyword += ",healthy";
+  if (!keyword.includes("meal")) keyword += ",meal";
+
+  return keyword;
+};
+
 const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdate, loading: parentLoading }) => {
-  const [imageUrl, setImageUrl] = useState<string | null>(meal.image_url || null);
-  const [generatingImage, setGeneratingImage] = useState(false);
+  // Tạo URL ảnh ngẫu nhiên từ Unsplash dựa trên tên món ăn
+  const unsplashKeyword = getUnsplashSearchKeyword(meal.recipe_name);
+  const defaultImageUrl = `https://source.unsplash.com/featured/?${unsplashKeyword}`;
+
+  const [imageUrl, setImageUrl] = useState<string>(meal.image_url || defaultImageUrl);
+  const [generatingImage, setGeneratingImage] = useState(false); // Giữ lại nếu muốn dùng cho chức năng tạo ảnh AI sau này
   const n = meal.nutrition_estimate;
   
-  const handleGenerateImage = async () => {
-    if (generatingImage) return;
-    setGeneratingImage(true);
-    try {
-      const url = await generateMealImage(meal);
-      setImageUrl(url);
-      if (onUpdate) {
-        onUpdate({ ...meal, image_url: url });
-      }
-    } catch (err) {
-      console.error("Failed to generate image", err);
-    } finally {
-      setGeneratingImage(false);
+  // Hàm này sẽ không còn gọi generateMealImage từ geminiService nữa
+  // Thay vào đó, nó sẽ tạo một URL Unsplash mới để làm mới ảnh
+  const handleGenerateImage = () => {
+    // Tạo một URL mới với timestamp để buộc trình duyệt tải lại ảnh
+    const newUnsplashUrl = `${defaultImageUrl}&${Date.now()}`;
+    setImageUrl(newUnsplashUrl);
+    if (onUpdate) {
+      onUpdate({ ...meal, image_url: newUnsplashUrl });
     }
   };
 
@@ -195,7 +213,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
               }`}
               title="Tạo ảnh món ăn"
             >
-              {generatingImage ? <Loader2 size={24} className="animate-spin" /> : <Sparkles size={24} />}
+              <RefreshCw size={24} /> {/* Thay Sparkles bằng RefreshCw để làm mới ảnh */}
             </button>
 
             <button
