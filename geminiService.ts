@@ -3,7 +3,7 @@ import { UserInput, SuggestionResponse, SuggestionMeal, UserProfile, ComputedTar
 import { SYSTEM_INSTRUCTION } from "./constants";
 
 // Lấy API Key từ biến môi trường
-const API_KEY = "AIzaSyDabUGaN9jxTgT6S8YHm8JRaTWaIgja-u0"; // API Key mới của bạn
+const API_KEY = "AIzaSyDabUGaN9jxTgT6S8YHm8JRaTWaIgja-u0"; // API Key của bạn
 
 if (!API_KEY) {
   throw new Error("Missing VITE_GEMINI_API_KEY environment variable.");
@@ -11,54 +11,42 @@ if (!API_KEY) {
 
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// Hàm giả định để tạo một SuggestionResponse từ văn bản
-function parseGeminiResponseToSuggestionResponse(geminiText: string): SuggestionResponse {
-  // Đây là một hàm giả định. Trong thực tế, bạn sẽ cần một cách phức tạp hơn
-  // để phân tích cú pháp phản hồi của Gemini thành cấu trúc JSON mong muốn.
-  // Ví dụ: bạn có thể yêu cầu Gemini trả về JSON trực tiếp trong prompt.
+// Hàm để phân tích cú pháp phản hồi JSON từ Gemini
+function parseGeminiResponseToSuggestionResponse(geminiText: string, input: UserInput): SuggestionResponse {
+  try {
+    const parsedJson = JSON.parse(geminiText);
 
-  // Để đơn giản, tôi sẽ tạo một phản hồi mẫu.
-  const sampleMeal: SuggestionMeal = {
-    recipe_id: "sample-meal-1",
-    recipe_name: "Salad Rau Củ Quả Tươi Mát",
-    short_description: "Salad giàu chất xơ với rau xanh, bơ và chanh, hỗ trợ tiêu hóa.",
-    reason: "Món ăn này cung cấp nhiều chất xơ từ rau xanh, giúp cải thiện nhu động ruột và bơ cung cấp chất béo lành mạnh. Chanh giúp tăng cường vitamin C và hỗ trợ hấp thu.",
-    how_it_supports_gut: "Chất xơ hòa tan và không hòa tan giúp nuôi dưỡng lợi khuẩn đường ruột và làm sạch hệ tiêu hóa. Bơ chứa chất béo không bão hòa đơn có lợi cho niêm mạc ruột.",
-    fit_with_goal: "Phù hợp với mục tiêu cải thiện tiêu hóa và giảm đầy hơi.",
-    main_ingredients_brief: "Rau xà lách, bơ, cà chua bi, dưa chuột, nước cốt chanh, dầu ô liu.",
-    ingredients: [
-      { name: "Rau xà lách", quantity: "100g" },
-      { name: "Bơ", quantity: "1/2 quả" },
-      { name: "Cà chua bi", quantity: "50g" },
-      { name: "Dưa chuột", quantity: "50g" },
-      { name: "Nước cốt chanh", quantity: "1 muỗng canh" },
-      { name: "Dầu ô liu", quantity: "1 muỗng canh" },
-    ],
-    nutrition_estimate: {
-      kcal: 250,
-      protein_g: 5,
-      fat_g: 20,
-      carb_g: 15,
-      fiber_g: 8,
-      vegetables_g: 200,
-      fruit_g: 0,
-      added_sugar_g: 0,
-      sodium_mg: 50,
-    },
-    fit_score: 90,
-    warnings_or_notes: [],
-    image_url: "https://images.unsplash.com/photo-1512621776951-a579fd9f8ed8?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  };
+    // Chuyển đổi định dạng JSON đơn giản thành SuggestionResponse đầy đủ
+    const suggestedMeals: SuggestionMeal[] = parsedJson.meals.map((meal: any) => ({
+      recipe_id: meal.name.replace(/\s+/g, '-').toLowerCase(), // Tạo ID đơn giản
+      recipe_name: meal.name,
+      short_description: meal.ingredients,
+      reason: parsedJson.advice, // Sử dụng advice làm lý do chung
+      how_it_supports_gut: parsedJson.advice,
+      fit_with_goal: parsedJson.advice,
+      main_ingredients_brief: meal.ingredients,
+      ingredients: meal.ingredients.split(', ').map((ing: string) => ({ name: ing.trim(), quantity: "" })), // Tách nguyên liệu
+      nutrition_estimate: {
+        kcal: parseInt(meal.calories.replace(/[^0-9]/g, '')) || 0,
+        protein_g: 0, fat_g: 0, carb_g: 0, fiber_g: 0,
+        vegetables_g: 0, fruit_g: 0, added_sugar_g: 0, sodium_mg: 0,
+      },
+      fit_score: 80, // Điểm mặc định
+      warnings_or_notes: [],
+      image_url: "", // Sẽ được tạo bởi RecipeCard
+    }));
 
-  const sampleResponse: SuggestionResponse = {
-    day_number: 1,
-    phase: 1,
-    meal_type: "breakfast", // Hoặc bất kỳ loại bữa ăn nào
-    explanation_for_phase: "Trong pha 1, chúng ta tập trung vào việc thanh lọc và giảm viêm, sử dụng các thực phẩm dễ tiêu hóa và giàu chất chống oxy hóa.",
-    suggested_meals: [sampleMeal],
-  };
-
-  return sampleResponse;
+    return {
+      day_number: input.day_number,
+      phase: 1, // Giả định Pha 1
+      meal_type: input.meal_type,
+      explanation_for_phase: parsedJson.advice,
+      suggested_meals: suggestedMeals,
+    };
+  } catch (e) {
+    console.error("Lỗi khi phân tích cú pháp phản hồi Gemini thành JSON:", e);
+    throw new Error("Phản hồi từ AI không đúng định dạng. Vui lòng thử lại.");
+  }
 }
 
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
@@ -84,30 +72,46 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
       const personalNote = userProfile.personal_note ? `Lưu ý cá nhân: ${userProfile.personal_note}.` : '';
 
       const prompt = `
-        ${SYSTEM_INSTRUCTION}
-
-        Hãy gợi ý một thực đơn chi tiết cho Bữa ${input.meal_type} của Ngày ${input.day_number}.
-        Hồ sơ người dùng:
+        Bạn là chuyên gia dinh dưỡng cao cấp cho chương trình 21 ngày phục hồi đường ruột.
+        Dựa trên hồ sơ người dùng sau:
         - Giới tính: ${userProfile.demographics.sex === 'male' ? 'Nam' : 'Nữ'}
         - Tuổi: ${userProfile.demographics.age_years}
-        - Chiều cao: ${userProfile.anthropometrics.height_cm} cm
         - Cân nặng: ${userProfile.anthropometrics.weight_kg} kg
-        - Mức độ vận động: ${userProfile.activity.level}
         - Mục tiêu chính: ${userProfile.goals.primary_goal}.
         ${conditions}
         ${restrictions}
         ${avoidIngredients}
         ${personalNote}
 
-        Mục tiêu dinh dưỡng cho bữa này:
-        - Calo: ${targets.kcal} kcal
-        - Đạm: ${targets.protein_g} g
-        - Carb: ${targets.carb_g} g
-        - Béo: ${targets.fat_g} g
-        - Xơ: ${targets.fiber_g} g
-
-        Cung cấp tên món ăn, mô tả ngắn, lý do tại sao món ăn này phù hợp với mục tiêu phục hồi đường ruột, các thành phần chính và ước tính dinh dưỡng chi tiết.
-        Phản hồi của bạn nên là một đoạn văn bản mô tả thực đơn, sau đó tôi sẽ phân tích cú pháp nó.
+        Hãy tạo một thực đơn cho Ngày 1, bao gồm 3 bữa chính (Sáng, Trưa, Tối) và 1 bữa phụ.
+        BẮT BUỘC tuân thủ NGHIÊM NGẶT danh sách thực phẩm "KHÔNG NÊN ĂN" (CẤM) và "QUY ĐỊNH ĐẶC BIỆT CỦA CHƯƠNG TRÌNH" đã được cung cấp trong SYSTEM_INSTRUCTION.
+        
+        Trả về kết quả dưới dạng JSON thuần (không có markdown ```json) theo cấu trúc sau:
+        {
+          "advice": "Lời khuyên ngắn gọn cho thực đơn này dựa trên hồ sơ người dùng và mục tiêu phục hồi đường ruột.",
+          "meals": [
+            {
+              "name": "Tên món ăn bữa sáng",
+              "ingredients": "Nguyên liệu chính (ví dụ: Yến mạch, hạt chia, sữa hạt)",
+              "calories": "Số calo ước tính (ví dụ: 300 kcal)"
+            },
+            {
+              "name": "Tên món ăn bữa trưa",
+              "ingredients": "Nguyên liệu chính",
+              "calories": "Số calo ước tính"
+            },
+            {
+              "name": "Tên món ăn bữa tối",
+              "ingredients": "Nguyên liệu chính",
+              "calories": "Số calo ước tính"
+            },
+            {
+              "name": "Tên món ăn bữa phụ",
+              "ingredients": "Nguyên liệu chính",
+              "calories": "Số calo ước tính"
+            }
+          ]
+        }
       `;
 
       const result = await currentModel.generateContent(prompt);
@@ -115,9 +119,7 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
       const text = response.text();
 
       // Phân tích cú pháp phản hồi văn bản thành cấu trúc SuggestionResponse
-      // Đây là nơi bạn sẽ cần logic phức tạp hơn để chuyển đổi văn bản thành JSON.
-      // Hiện tại, tôi sẽ sử dụng hàm giả định.
-      return parseGeminiResponseToSuggestionResponse(text);
+      return parseGeminiResponseToSuggestionResponse(text, input);
 
     } catch (error) {
       console.error(`Lỗi khi gọi API Gemini với model ${modelName}:`, error);
