@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { UserProfile, ComputedTargets, MealType, SuggestionResponse, UserInput, PersistRequest, SuggestionMeal, MealSlot, SnackTiming } from '../types';
 import { calculateDailyNeeds, distributeTargetsByMeal } from '../nutritionService';
@@ -13,6 +12,7 @@ import {
   Loader2, AlertCircle, Edit3, Clock, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getUserProfile } from '../src/utils/supabaseUtils';
 
 interface DashboardProps {
   userProfile: UserProfile;
@@ -27,35 +27,50 @@ const MEAL_LABELS: Record<string, string> = {
     snack: 'Bữa phụ'
 };
 
-const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
+const DashboardScreen: React.FC<DashboardProps> = ({ userProfile: initialUserProfile }) => {
   const [day, setDay] = useState(1);
   const [mealType, setMealType] = useState<MealType>('breakfast');
   const [snackTiming, setSnackTiming] = useState<SnackTiming>('after_meal');
   const [dailyTargets, setDailyTargets] = useState<ComputedTargets | null>(null);
   const [mealTargets, setMealTargets] = useState<Record<MealType, ComputedTargets> | null>(null);
   const [runId, setRunId] = useState<string>("");
-  const [personalNote, setPersonalNote] = useState<string>(userProfile.personal_note || "");
+  const [personalNote, setPersonalNote] = useState<string>(initialUserProfile.personal_note || "");
   const navigate = useNavigate();
   
   const [loading, setLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState<number | 'add' | null>(null);
   const [suggestion, setSuggestion] = useState<SuggestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(initialUserProfile);
 
   useEffect(() => {
-    if (userProfile) {
-        const daily = calculateDailyNeeds(userProfile);
-        setDailyTargets(daily);
-        setMealTargets(distributeTargetsByMeal(daily));
-
-        let storedRunId = localStorage.getItem('guthealth_run_id');
-        if (!storedRunId) {
-            storedRunId = `run_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
-            localStorage.setItem('guthealth_run_id', storedRunId);
+    const fetchProfileAndInitialize = async () => {
+      if (initialUserProfile && initialUserProfile.demographics) {
+        const fetchedProfile = await getUserProfile(initialUserProfile.demographics.phone_number || "");
+        if (fetchedProfile) {
+          setCurrentUserProfile(fetchedProfile);
+          setPersonalNote(fetchedProfile.personal_note || "");
+        } else {
+          setCurrentUserProfile(initialUserProfile);
         }
-        setRunId(storedRunId);
-    }
-  }, [userProfile]);
+      }
+
+      if (currentUserProfile) {
+          const daily = calculateDailyNeeds(currentUserProfile);
+          setDailyTargets(daily);
+          setMealTargets(distributeTargetsByMeal(daily));
+
+          let storedRunId = localStorage.getItem('guthealth_run_id');
+          if (!storedRunId) {
+              storedRunId = `run_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
+              localStorage.setItem('guthealth_run_id', storedRunId);
+          }
+          setRunId(storedRunId);
+      }
+    };
+
+    fetchProfileAndInitialize();
+  }, [initialUserProfile, currentUserProfile]);
 
   // Navigation Logic
   const handlePrevDay = () => {
@@ -112,7 +127,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
   };
 
   const handleMealUpdate = (updatedMeal: SuggestionMeal, index: number) => {
-    if (!suggestion) return;
+    if (!suggestion || !suggestion.suggested_meals) return;
     const updatedMeals = suggestion.suggested_meals.map((m, i) => i === index ? updatedMeal : m);
     const newSuggestion = { ...suggestion, suggested_meals: updatedMeals };
     setSuggestion(newSuggestion);
@@ -120,18 +135,18 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
   };
 
   async function generateOneItemForMeal(meal_slot: MealSlot, excludeTitles: string[]) {
-    if (!mealTargets) throw new Error("Missing targets");
+    if (!mealTargets || !currentUserProfile) throw new Error("Missing targets or user profile");
     
-    const conditions = Object.keys(userProfile.health_conditions.flags).filter(k => userProfile.health_conditions.flags[k]);
-    const restrictions = Object.keys(userProfile.dietary_preferences.restrictions).filter(k => userProfile.dietary_preferences.restrictions[k]);
+    const conditions = Object.keys(currentUserProfile.health_conditions.flags).filter(k => currentUserProfile.health_conditions.flags[k]);
+    const restrictions = Object.keys(currentUserProfile.dietary_preferences.restrictions).filter(k => currentUserProfile.dietary_preferences.restrictions[k]);
 
     const input: UserInput = {
        day_number: day,
        meal_type: meal_slot,
-       user_goal: userProfile.goals.primary_goal,
+       user_goal: currentUserProfile.goals.primary_goal,
        conditions: conditions,
        dietary_restrictions: restrictions,
-       user_profile: userProfile,
+       user_profile: currentUserProfile,
        targets: mealTargets[meal_slot],
        max_items: 1,
        exclude_titles: excludeTitles,
@@ -147,7 +162,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
   }
 
   async function rerollThisCard(meal_slot: MealSlot, itemIndex: number) {
-    if (!suggestion || !runId) return;
+    if (!suggestion || !runId || !suggestion.suggested_meals) return;
     setLoadingAction(itemIndex);
     setError(null);
 
@@ -168,7 +183,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
   }
 
   async function addOneMoreItem(meal_slot: MealSlot) {
-    if (!suggestion || !runId) return;
+    if (!suggestion || !runId || !suggestion.suggested_meals) return;
     if (suggestion.suggested_meals.length >= 3) {
         alert("Bữa này đã đủ 3 món. Hãy dùng 'Đổi món này' để thay.");
         return;
@@ -193,21 +208,21 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
   }
 
   const handleSuggest = async () => {
-     if (!mealTargets || !runId) return;
+     if (!mealTargets || !runId || !currentUserProfile) return;
      setLoading(true);
      setError(null);
      setSuggestion(null);
      
-     const conditions = Object.keys(userProfile.health_conditions.flags).filter(k => userProfile.health_conditions.flags[k]);
-     const restrictions = Object.keys(userProfile.dietary_preferences.restrictions).filter(k => userProfile.dietary_preferences.restrictions[k]);
+     const conditions = Object.keys(currentUserProfile.health_conditions.flags).filter(k => currentUserProfile.health_conditions.flags[k]);
+     const restrictions = Object.keys(currentUserProfile.dietary_preferences.restrictions).filter(k => currentUserProfile.dietary_preferences.restrictions[k]);
 
      const input: UserInput = {
         day_number: day,
         meal_type: mealType,
-        user_goal: userProfile.goals.primary_goal,
+        user_goal: currentUserProfile.goals.primary_goal,
         conditions: conditions,
         dietary_restrictions: restrictions,
-        user_profile: userProfile,
+        user_profile: currentUserProfile,
         targets: mealTargets[mealType],
         personal_note: personalNote,
         snack_timing: mealType === 'snack' ? snackTiming : undefined
@@ -216,7 +231,9 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
      try {
          const result = await getMealSuggestions(input);
          setSuggestion(result);
-         persistResults(result.suggested_meals, result.phase, mealType);
+         if (result && result.suggested_meals) {
+            persistResults(result.suggested_meals, result.phase, mealType);
+         }
      } catch (err) {
          setError("Không thể tạo thực đơn. Vui lòng thử lại.");
          console.error(err);
@@ -235,7 +252,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
       </div>
   );
 
-  if (!dailyTargets) return null;
+  if (!dailyTargets || !currentUserProfile) return null;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 font-sans">
@@ -250,7 +267,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
                </div>
                <div className="flex items-center gap-3">
                    <div className="hidden sm:block text-[10px] font-black uppercase tracking-widest bg-slate-900/40 backdrop-blur-md px-4 py-2 rounded-full text-white border border-white/10 shadow-sm">
-                       {userProfile.demographics.sex === 'male' ? 'Nam' : 'Nữ'} • {userProfile.demographics.age_years}T • {userProfile.anthropometrics.weight_kg}KG
+                       {currentUserProfile.demographics.sex === 'male' ? 'Nam' : 'Nữ'} • {currentUserProfile.demographics.age_years}T • {currentUserProfile.anthropometrics.weight_kg}KG
                    </div>
                    <button 
                         onClick={() => navigate('/onboarding')}
@@ -454,7 +471,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
                <div className="flex gap-3 mb-8">
                    <button
                        onClick={() => addOneMoreItem(mealType)}
-                       disabled={loading || !suggestion || suggestion.suggested_meals.length >= 3}
+                       disabled={loading || !suggestion || (suggestion.suggested_meals && suggestion.suggested_meals.length >= 3)}
                        className="flex-1 px-4 py-4 bg-white hover:bg-slate-50 text-slate-800 font-black uppercase tracking-widest text-[11px] rounded-2xl border-2 border-slate-200 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 active:scale-95"
                    >
                        {loadingAction === 'add' ? <Loader2 size={16} className="animate-spin text-indigo-600"/> : <PlusCircle size={16} className="text-indigo-600" />}
@@ -514,7 +531,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile }) => {
                    </div>
                )}
 
-               {suggestion && (
+               {suggestion && suggestion.suggested_meals && (
                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-500">
                        <div className="bg-gradient-to-br from-indigo-700 to-indigo-900 p-8 sm:p-10 rounded-[2.5rem] text-white shadow-2xl shadow-indigo-200 relative overflow-hidden border border-indigo-500/30">
                            <div className="absolute -right-10 -bottom-10 opacity-10 rotate-12">
