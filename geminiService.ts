@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
 import { UserInput, SuggestionResponse, SuggestionMeal, UserProfile, ComputedTargets } from "./types";
 import { SYSTEM_INSTRUCTION } from "./constants";
 
@@ -10,7 +10,6 @@ if (!API_KEY) {
 }
 
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" }); // Đã thay đổi tên model
 
 // Hàm giả định để tạo một SuggestionResponse từ văn bản
 function parseGeminiResponseToSuggestionResponse(geminiText: string): SuggestionResponse {
@@ -63,60 +62,72 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string): Suggestion
 }
 
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
-  console.log("Đang gọi Gemini...");
-  try {
-    const userProfile = input.user_profile;
-    const targets = input.targets;
+  const modelsToTry = ["gemini-1.5-flash-001", "gemini-pro"];
+  let currentModel: GenerativeModel | null = null;
+  let lastError: any = null;
 
-    if (!userProfile || !targets) {
-      throw new Error("Missing user profile or nutritional targets for Gemini API call.");
+  for (const modelName of modelsToTry) {
+    console.log(`Đang thử gọi Gemini với model: ${modelName}...`);
+    try {
+      currentModel = genAI.getGenerativeModel({ model: modelName });
+
+      const userProfile = input.user_profile;
+      const targets = input.targets;
+
+      if (!userProfile || !targets) {
+        throw new Error("Missing user profile or nutritional targets for Gemini API call.");
+      }
+
+      const conditions = input.conditions.length > 0 ? `Tình trạng sức khỏe: ${input.conditions.join(', ')}.` : '';
+      const restrictions = input.dietary_restrictions.length > 0 ? `Hạn chế ăn uống: ${input.dietary_restrictions.join(', ')}.` : '';
+      const avoidIngredients = userProfile.dietary_preferences.avoid_ingredients.length > 0 ? `Tránh các nguyên liệu: ${userProfile.dietary_preferences.avoid_ingredients.join(', ')}.` : '';
+      const personalNote = userProfile.personal_note ? `Lưu ý cá nhân: ${userProfile.personal_note}.` : '';
+
+      const prompt = `
+        ${SYSTEM_INSTRUCTION}
+
+        Hãy gợi ý một thực đơn chi tiết cho Bữa ${input.meal_type} của Ngày ${input.day_number}.
+        Hồ sơ người dùng:
+        - Giới tính: ${userProfile.demographics.sex === 'male' ? 'Nam' : 'Nữ'}
+        - Tuổi: ${userProfile.demographics.age_years}
+        - Chiều cao: ${userProfile.anthropometrics.height_cm} cm
+        - Cân nặng: ${userProfile.anthropometrics.weight_kg} kg
+        - Mức độ vận động: ${userProfile.activity.level}
+        - Mục tiêu chính: ${userProfile.goals.primary_goal}.
+        ${conditions}
+        ${restrictions}
+        ${avoidIngredients}
+        ${personalNote}
+
+        Mục tiêu dinh dưỡng cho bữa này:
+        - Calo: ${targets.kcal} kcal
+        - Đạm: ${targets.protein_g} g
+        - Carb: ${targets.carb_g} g
+        - Béo: ${targets.fat_g} g
+        - Xơ: ${targets.fiber_g} g
+
+        Cung cấp tên món ăn, mô tả ngắn, lý do tại sao món ăn này phù hợp với mục tiêu phục hồi đường ruột, các thành phần chính và ước tính dinh dưỡng chi tiết.
+        Phản hồi của bạn nên là một đoạn văn bản mô tả thực đơn, sau đó tôi sẽ phân tích cú pháp nó.
+      `;
+
+      const result = await currentModel.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Phân tích cú pháp phản hồi văn bản thành cấu trúc SuggestionResponse
+      // Đây là nơi bạn sẽ cần logic phức tạp hơn để chuyển đổi văn bản thành JSON.
+      // Hiện tại, tôi sẽ sử dụng hàm giả định.
+      return parseGeminiResponseToSuggestionResponse(text);
+
+    } catch (error) {
+      console.error(`Lỗi khi gọi API Gemini với model ${modelName}:`, error);
+      lastError = error;
+      // Tiếp tục thử model tiếp theo
     }
-
-    const conditions = input.conditions.length > 0 ? `Tình trạng sức khỏe: ${input.conditions.join(', ')}.` : '';
-    const restrictions = input.dietary_restrictions.length > 0 ? `Hạn chế ăn uống: ${input.dietary_restrictions.join(', ')}.` : '';
-    const avoidIngredients = userProfile.dietary_preferences.avoid_ingredients.length > 0 ? `Tránh các nguyên liệu: ${userProfile.dietary_preferences.avoid_ingredients.join(', ')}.` : '';
-    const personalNote = userProfile.personal_note ? `Lưu ý cá nhân: ${userProfile.personal_note}.` : '';
-
-    const prompt = `
-      Bạn là chuyên gia dinh dưỡng cao cấp cho chương trình 21 ngày phục hồi đường ruột.
-      Hãy gợi ý một thực đơn chi tiết cho Bữa ${input.meal_type} của Ngày ${input.day_number}.
-      Hồ sơ người dùng:
-      - Giới tính: ${userProfile.demographics.sex === 'male' ? 'Nam' : 'Nữ'}
-      - Tuổi: ${userProfile.demographics.age_years}
-      - Chiều cao: ${userProfile.anthropometrics.height_cm} cm
-      - Cân nặng: ${userProfile.anthropometrics.weight_kg} kg
-      - Mức độ vận động: ${userProfile.activity.level}
-      - Mục tiêu chính: ${userProfile.goals.primary_goal}.
-      ${conditions}
-      ${restrictions}
-      ${avoidIngredients}
-      ${personalNote}
-
-      Mục tiêu dinh dưỡng cho bữa này:
-      - Calo: ${targets.kcal} kcal
-      - Đạm: ${targets.protein_g} g
-      - Carb: ${targets.carb_g} g
-      - Béo: ${targets.fat_g} g
-      - Xơ: ${targets.fiber_g} g
-
-      Hãy đảm bảo thực đơn tuân thủ nghiêm ngặt các quy tắc của chương trình 21 ngày phục hồi đường ruột (đặc biệt là danh sách đen các thực phẩm không được dùng).
-      Cung cấp tên món ăn, mô tả ngắn, lý do tại sao món ăn này phù hợp với mục tiêu phục hồi đường ruột, các thành phần chính và ước tính dinh dưỡng chi tiết.
-      Phản hồi của bạn nên là một đoạn văn bản mô tả thực đơn, sau đó tôi sẽ phân tích cú pháp nó.
-    `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Phân tích cú pháp phản hồi văn bản thành cấu trúc SuggestionResponse
-    // Đây là nơi bạn sẽ cần logic phức tạp hơn để chuyển đổi văn bản thành JSON.
-    // Hiện tại, tôi sẽ sử dụng hàm giả định.
-    return parseGeminiResponseToSuggestionResponse(text);
-
-  } catch (error) {
-    console.error("Lỗi khi gọi API Gemini:", error);
-    throw new Error("Không thể tạo thực đơn từ Gemini. Vui lòng thử lại.");
   }
+
+  // Nếu tất cả các model đều thất bại
+  throw new Error(`Không thể tạo thực đơn từ Gemini sau khi thử tất cả các model. Lỗi cuối cùng: ${lastError?.message || "Không rõ lỗi."}`);
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
