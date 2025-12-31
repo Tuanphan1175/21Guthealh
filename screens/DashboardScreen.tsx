@@ -41,36 +41,41 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile: initialUserPro
   const [loadingAction, setLoadingAction] = useState<number | 'add' | null>(null);
   const [suggestion, setSuggestion] = useState<SuggestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(initialUserProfile);
+  const [currentUserProfile, setCurrentUserProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    const fetchProfileAndInitialize = async () => {
-      if (initialUserProfile && initialUserProfile.demographics) {
-        const fetchedProfile = await getUserProfile(initialUserProfile.demographics.phone_number || "");
+    const fetchProfile = async () => {
+      if (initialUserProfile && initialUserProfile.demographics && initialUserProfile.demographics.phone_number) {
+        const fetchedProfile = await getUserProfile(initialUserProfile.demographics.phone_number);
         if (fetchedProfile) {
           setCurrentUserProfile(fetchedProfile);
           setPersonalNote(fetchedProfile.personal_note || "");
         } else {
+          // Fallback if fetching fails, use initialUserProfile
           setCurrentUserProfile(initialUserProfile);
         }
-      }
-
-      if (currentUserProfile) {
-          const daily = calculateDailyNeeds(currentUserProfile);
-          setDailyTargets(daily);
-          setMealTargets(distributeTargetsByMeal(daily));
-
-          let storedRunId = localStorage.getItem('guthealth_run_id');
-          if (!storedRunId) {
-              storedRunId = `run_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
-              localStorage.setItem('guthealth_run_id', storedRunId);
-          }
-          setRunId(storedRunId);
+      } else {
+        setCurrentUserProfile(initialUserProfile); // If no phone_number, use initial
       }
     };
 
-    fetchProfileAndInitialize();
-  }, [initialUserProfile, currentUserProfile]);
+    fetchProfile();
+  }, [initialUserProfile]);
+
+  useEffect(() => {
+    if (currentUserProfile) {
+      const daily = calculateDailyNeeds(currentUserProfile);
+      setDailyTargets(daily);
+      setMealTargets(distributeTargetsByMeal(daily));
+
+      let storedRunId = localStorage.getItem('guthealth_run_id');
+      if (!storedRunId) {
+          storedRunId = `run_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
+          localStorage.setItem('guthealth_run_id', storedRunId);
+      }
+      setRunId(storedRunId);
+    }
+  }, [currentUserProfile]);
 
   // Navigation Logic
   const handlePrevDay = () => {
@@ -471,7 +476,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile: initialUserPro
                <div className="flex gap-3 mb-8">
                    <button
                        onClick={() => addOneMoreItem(mealType)}
-                       disabled={loading || !suggestion || (suggestion.suggested_meals && suggestion.suggested_meals.length >= 3)}
+                       disabled={loading || !suggestion || suggestion.suggested_meals.length >= 3}
                        className="flex-1 px-4 py-4 bg-white hover:bg-slate-50 text-slate-800 font-black uppercase tracking-widest text-[11px] rounded-2xl border-2 border-slate-200 transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 active:scale-95"
                    >
                        {loadingAction === 'add' ? <Loader2 size={16} className="animate-spin text-indigo-600"/> : <PlusCircle size={16} className="text-indigo-600" />}
@@ -539,7 +544,7 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile: initialUserPro
                            </div>
                            <div className="relative z-10">
                               <h3 className="text-indigo-200 font-black uppercase tracking-[0.25em] text-[11px] mb-4 flex items-center gap-3">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div>
+                                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div>
                                   Lời khuyên Pha {suggestion.phase}
                               </h3>
                               <p className="text-xl sm:text-2xl font-black leading-tight mb-4">{suggestion.explanation_for_phase}</p>
