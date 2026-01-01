@@ -49,7 +49,7 @@ const IngredientIcon: React.FC<{ name: string }> = ({ name }) => {
 };
 
 const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdate, loading: parentLoading }) => {
-  // Logic tạo ảnh dự phòng an toàn (luôn hoạt động)
+  // Logic tạo ảnh dự phòng an toàn (luôn hoạt động với mọi món)
   const getSafePlaceholder = (text: string) => 
     `https://placehold.co/800x600/f1f5f9/475569.png?text=${encodeURIComponent(text)}&font=roboto`;
 
@@ -57,7 +57,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
   const [imageUrl, setImageUrl] = useState<string>(meal.image_url || getSafePlaceholder(meal.recipe_name));
   const [generatingImage, setGeneratingImage] = useState(false);
   
-  // Effect: Cập nhật ảnh khi props thay đổi (quan trọng khi đổi món)
+  // QUAN TRỌNG: Cập nhật ảnh ngay khi props thay đổi (khi đổi món hoặc tạo mới)
   useEffect(() => {
     if (meal.image_url && meal.image_url.trim() !== "") {
       setImageUrl(meal.image_url);
@@ -72,7 +72,6 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
     if (generatingImage) return;
     setGeneratingImage(true);
     try {
-      // Gọi API tạo ảnh (hoặc giả lập tạo ảnh mới)
       const newImageUrl = await generateMealImage(meal);
       setImageUrl(newImageUrl);
       if (onUpdate) {
@@ -80,7 +79,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
       }
     } catch (err) {
       console.error("Failed to generate image:", err);
-      // Nếu lỗi, fallback về placeholder an toàn
+      // Nếu lỗi, quay về ảnh placeholder an toàn
       setImageUrl(getSafePlaceholder(meal.recipe_name));
     } finally {
       setGeneratingImage(false);
@@ -89,7 +88,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
 
   const handleImageLoadError = () => {
     // Nếu ảnh load lỗi, thay thế ngay bằng placeholder an toàn
-    // Tránh loop vô tận bằng cách kiểm tra xem URL hiện tại có phải là placeholder chưa
+    // Tránh loop vô tận bằng cách kiểm tra
     if (!imageUrl.includes('placehold.co')) {
         setImageUrl(getSafePlaceholder(meal.recipe_name));
     }
