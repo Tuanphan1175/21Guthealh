@@ -21,11 +21,11 @@ function cleanGeminiResponse(text: string): string {
 
 /**
  * Hàm tạo link ảnh placeholder an toàn, đẹp, hỗ trợ tiếng Việt
+ * Thay thế hoàn toàn cho API tạo ảnh và via.placeholder bị lỗi
  */
 function getSafeImageUrl(text: string): string {
     const encodedText = encodeURIComponent(text);
-    // Sử dụng placehold.co thay vì via.placeholder (hay bị lỗi)
-    // Màu nền: f8fafc (slate-50), Màu chữ: 475569 (slate-600)
+    // Sử dụng placehold.co: Nền xám nhạt (f8fafc), Chữ xám đậm (475569)
     return `https://placehold.co/800x600/f8fafc/475569.png?text=${encodedText}&font=roboto`;
 }
 
@@ -90,6 +90,7 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
 // --- MAIN SERVICE ---
 
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
+  // Cập nhật danh sách model hỗ trợ (Flash nhanh hơn, Pro thông minh hơn)
   const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro"]; 
   let lastError: any = null;
 
@@ -106,7 +107,6 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
         ]
       }`;
 
-      // (Giữ nguyên prompt của bạn hoặc rút gọn như dưới đây)
       const prompt = `
         Tạo thực đơn 1 món cho bữa ${input.meal_type}.
         User: ${userProfile?.demographics?.sex}, ${userProfile?.goals?.primary_goal}.
@@ -126,11 +126,12 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
   throw new Error(`Lỗi kết nối AI: ${lastError?.message}`);
 };
 
-// --- HÀM TẠO ẢNH GIẢ LẬP (SỬA LỖI 404 POST) ---
+// --- HÀM TẠO ẢNH GIẢ LẬP (ĐÃ SỬA LỖI 404 POST) ---
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
-  // Thay vì gọi API bị lỗi, ta trả về luôn link ảnh placeholder xịn
-  // Giả lập độ trễ 1 chút cho giống thật
-  await new Promise(resolve => setTimeout(resolve, 800)); 
+  // Thay vì gọi fetch('/api/...') gây lỗi 404, ta trả về trực tiếp link ảnh
+  
+  // Giả lập độ trễ 1 chút (0.5s) để tạo cảm giác đang xử lý
+  await new Promise(resolve => setTimeout(resolve, 500)); 
   
   return getSafeImageUrl(meal.recipe_name);
 };
