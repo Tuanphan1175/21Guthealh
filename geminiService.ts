@@ -9,14 +9,31 @@ const MODEL_NAME = "gemini-2.5-flash";
 // --- BỘ KIẾN THỨC DINH DƯỠNG (ĐÃ NẠP TỪ TÀI LIỆU CỦA BẠN) ---
 const GUT_HEALTH_RULES = `
 QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
-1. GIAI ĐOẠN 1 (Ngày 1-3): THANH LỌC. 
-   - CẤM TUYỆT ĐỐI: Tinh bột (cơm, khoai, bún, phở, bánh mì), Đường, Sữa bò.
-   - ƯU TIÊN: Sinh tố xanh (Green Smoothie), Protein thực vật, Canh súp rau củ, Cá hấp/luộc.
-2. GIAI ĐOẠN 2 (Ngày 4-21): PHỤC HỒI. 
-   - ĐƯỢC ĂN: Tinh bột tốt (Khoai lang, gạo lứt, quinoa, yến mạch).
-   - ĐẠM: Đa dạng (Cá hồi, ức gà, hải sản, trứng gà ta).
-3. DANH SÁCH CẤM: Thịt đỏ công nghiệp, đồ chiên xào nhiều dầu, lúa mì, bắp (ngô).
-4. KHUYẾN KHÍCH: Rau 5 màu, Các loại hạt (Mắc ca, Óc chó), Dầu Oliu, Quả Bơ.
+1. GIAI ĐOẠN 1: THANH LỌC (Ngày 1 - Ngày 3):
+   - MỤC TIÊU: Vá lành đường ruột, thải độc.
+   - TUYỆT ĐỐI CẤM TINH BỘT: Không cơm, phở, bún, bánh mì, khoai lang, ngô.
+   - BỮA SÁNG: Ưu tiên Sinh tố xanh (Green Smoothie), Protein thực vật lỏng.
+   - CHẾ BIẾN: Chỉ Hấp, Luộc, Áp chảo nhẹ. Không chiên xào nhiều dầu.
+   - THỰC PHẨM: Cá, hải sản, ức gà, rau xanh đậm, các loại hạt (lượng nhỏ).
+
+2. GIAI ĐOẠN 2: PHỤC HỒI (Ngày 4 - Ngày 21):
+   - Được phép ăn lại tinh bột tốt: Khoai lang, Khoai từ, khoai sọ.
+   - Đa dạng đạm: Cá hồi, gà thả vườn, hải sản.
+   - Tăng cường rau củ 5 màu sắc.
+
+3. DANH SÁCH "ĐÈN ĐỎ" (CẤM TRONG MỌI GIAI ĐOẠN):
+   - Đường tinh luyện, bánh kẹo ngọt, nước ngọt có ga.
+   - Sữa bò và chế phẩm từ sữa bò (trừ bơ Ghee).
+   - Thịt đỏ nuôi công nghiệp (Heo, Bò công nghiệp).
+   - Lúa mì, Bắp (Ngô), Đậu nành (trừ loại lên men như Miso/Tempeh/Natto), các loại đậu.
+   - Dầu thực vật công nghiệp (Dầu nành, dầu hướng dương).
+   - Đồ hộp, đồ chế biến sẵn (Xúc xích, thịt nguội).
+
+4. DANH SÁCH "ĐÈN XANH" (KHUYẾN KHÍCH):
+   - Chất béo tốt: Dầu Oliu, Dầu dừa, Quả bơ, Các loại hạt (Mắc ca, Óc chó, Hạnh nhân).
+   - Đạm sạch: Cá hồi, Cá thu, Tôm, Gà thả vườn, Trứng gà ta.
+   - Rau củ: Súp lơ, Cải xoăn (Kale), Rau Bina, Cà rốt, Củ dền.
+   - Trái cây ít ngọt: Ổi, Táo xanh, Bơ, Dâu tây, Việt quất.
 `;
 
 // --- TỪ ĐIỂN ẢNH AN TOÀN (ANTI-CAT MAPPING) ---
