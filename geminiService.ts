@@ -1,20 +1,41 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; // <--- ĐỪNG QUÊN DÁN KEY
+const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; // <--- ĐỪNG QUÊN DÁN KEY
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const MODEL_NAME = "gemini-2.5-flash";
 
-// --- HÀM LẤY ẢNH THEO DANH MỤC (KHÔNG BAO GIỜ RA MÈO) ---
+// --- TỪ ĐIỂN ẢNH AN TOÀN (Mapping) ---
+// Thay vì tìm kiếm ngẫu nhiên, ta định nghĩa các từ khóa "bao chuẩn"
+const SAFE_IMAGE_KEYWORDS: Record<string, string> = {
+    "oats": "oatmeal,fruit,bowl",      // Nhóm Yến mạch -> Tìm ảnh yến mạch + trái cây
+    "smoothie": "smoothie,glass,fruit", // Nhóm Sinh tố -> Tìm ảnh ly sinh tố
+    "soup": "soup,bowl,spoon",         // Nhóm Súp/Cháo -> Tìm ảnh bát súp
+    "salad": "salad,vegetable,plate",  // Nhóm Salad -> Tìm ảnh đĩa rau
+    "rice": "fried,rice,food",         // Nhóm Cơm -> Tìm ảnh cơm rang (tránh ra hóa đơn)
+    "noodle": "noodle,soup,bowl",      // Nhóm Mì/Phở -> Tìm ảnh bát mì
+    "chicken": "roasted,chicken,food", // Nhóm Gà -> Gà quay/nướng
+    "fish": "grilled,fish,food",       // Nhóm Cá
+    "meat": "steak,beef,food",         // Nhóm Thịt đỏ
+    "bread": "sandwich,bread,food",    // Nhóm Bánh mì
+    "fruit": "fruit,platter,fresh",    // Nhóm Trái cây
+    "default": "healthy,food,dish"     // Mặc định
+};
+
+// --- HÀM LẤY ẢNH THÔNG MINH ---
 function getRealFoodImage(category: string): string {
-    // Chỉ sử dụng 1 từ khóa danh mục duy nhất để đảm bảo LoremFlickr luôn tìm thấy ảnh
-    const cleanCategory = category.trim().replace(/\s+/g, '').toLowerCase();
+    // 1. Chuẩn hóa category (về chữ thường, bỏ khoảng trắng)
+    const key = category.trim().toLowerCase();
     
-    // Tạo số ngẫu nhiên để ảnh thay đổi mỗi lần bấm
+    // 2. Tra cứu từ khóa an toàn trong từ điển
+    // Nếu Gemini trả về category lạ, dùng "default"
+    const searchKeyword = SAFE_IMAGE_KEYWORDS[key] || SAFE_IMAGE_KEYWORDS["default"];
+    
+    // 3. Tạo random lock để ảnh thay đổi mỗi lần bấm (nhưng vẫn đúng chủ đề)
     const randomLock = Math.floor(Math.random() * 9999);
 
-    // URL này đảm bảo 100% ra ảnh đồ ăn
-    return `https://loremflickr.com/800/600/${cleanCategory},food?lock=${randomLock}`;
+    // URL LoremFlickr với từ khóa ĐÃ ĐƯỢC KIỂM SOÁT
+    return `https://loremflickr.com/800/600/${searchKeyword}?lock=${randomLock}`;
 }
 
 function cleanGeminiResponse(text: string): string {
@@ -37,9 +58,8 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
     const suggestedMeals: SuggestionMeal[] = mealsData.map((meal: any, index: number) => {
         const mealName = meal.name || "Món ăn dinh dưỡng";
         
-        // Lấy từ khóa danh mục chung từ Gemini
-        // Nếu không có, mặc định là "dish" (món ăn) để luôn an toàn
-        const imageCategory = meal.image_keyword_en || "dish";
+        // Lấy category từ Gemini (Ví dụ: "oats", "soup")
+        const imageCategory = meal.image_category || "default";
 
         return {
             recipe_id: `meal-${input.day_number}-${index}-${Date.now()}`,
@@ -53,7 +73,7 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
             nutrition_estimate: { kcal: 500, protein_g: 30, fat_g: 10, carb_g: 50, fiber_g: 5, vegetables_g: 100, fruit_g: 0, added_sugar_g: 0, sodium_mg: 0 },
             fit_score: 95, 
             warnings_or_notes: [],
-            // Gọi hàm lấy ảnh với từ khóa an toàn
+            // Gọi hàm lấy ảnh với category
             image_url: getRealFoodImage(imageCategory), 
         };
     });
@@ -78,16 +98,20 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     Khách hàng: ${input.user_profile?.demographics?.sex}, Mục tiêu: ${input.user_profile?.goals?.primary_goal}.
     
     QUAN TRỌNG VỀ HÌNH ẢNH:
-    - Tại trường "image_keyword_en", hãy chọn ĐÚNG 1 TỪ TIẾNG ANH thuộc nhóm sau mô tả món ăn:
-    - Danh sách từ khóa cho phép: "soup", "salad", "meat", "fish", "chicken", "vegetable", "fruit", "rice", "noodle", "cake", "drink", "breakfast".
-    - Ví dụ: "Phở" -> "soup". "Cơm gà" -> "rice". "Sinh tố" -> "drink". "Yến mạch" -> "breakfast".
+    - Hãy phân loại món ăn vào ĐÚNG 1 trong các nhóm sau (điền vào trường "image_category"):
+    - Danh sách nhóm: "oats", "smoothie", "soup", "salad", "rice", "noodle", "chicken", "fish", "meat", "bread", "fruit".
+    - Ví dụ: 
+      + "Yến mạch/Cháo yến mạch" -> "oats"
+      + "Cơm gà" -> "rice"
+      + "Sinh tố bơ" -> "smoothie"
+      + "Phở bò" -> "noodle"
     
     JSON Mẫu: 
     { 
       "advice": "...", 
       "meals": [{ 
-        "name": "Tên món (Việt)", 
-        "image_keyword_en": "soup", 
+        "name": "Tên món", 
+        "image_category": "oats", 
         "ingredients": "...", 
         "calories": "..." 
       }] 
@@ -121,6 +145,6 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
-  // Khi tạo lại ảnh, dùng tên món để lấy ảnh khác (nhưng vẫn an toàn)
-  return getRealFoodImage("dish");
+  // Khi tạo lại ảnh, ta không biết category, nên dùng tên món làm từ khóa fallback
+  return `https://loremflickr.com/800/600/${meal.recipe_name.replace(/ /g, ',')},food?lock=${Math.random()}`;
 };
