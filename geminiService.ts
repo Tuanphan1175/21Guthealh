@@ -1,7 +1,7 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
-// --- ĐÂY LÀ KEY LẤY TỪ ẢNH MÀN HÌNH CỦA BẠN (CHẮC CHẮN ĐÚNG) ---
-const API_KEY = "AIzaSyCJ8-8krZ5lozRzQUP1QEppp1hinu1xpv4"; 
+// --- API KEY CỦA BẠN (Đã được làm sạch) ---
+const API_KEY = "AIzaSyCJ8-8krZ5lozRzQUP1QEppp1hinu1xpv4";
 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
@@ -11,7 +11,6 @@ function getSafeImageUrl(text: string): string {
 }
 
 function cleanGeminiResponse(text: string): string {
-  // Xóa các ký tự markdown thừa nếu có
   return text.replace(/```json/g, '').replace(/```/g, '').trim();
 }
 
@@ -63,15 +62,15 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
   }
 }
 
-// --- MAIN SERVICE (DÙNG FETCH TRỰC TIẾP ĐỂ TRÁNH LỖI THƯ VIỆN) ---
+// --- MAIN SERVICE ---
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
-  // Danh sách model khớp với tài khoản của bạn
+  // Danh sách model khớp với tài khoản 2026 của bạn
   const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash-exp"]; 
   let lastError: any = null;
 
+  // Cấu trúc Prompt
   const userProfile = input.user_profile;
   const jsonStructure = `{ "advice": "Lời khuyên", "meals": [{ "name": "Tên món", "ingredients": "Nguyên liệu", "calories": "500" }] }`;
-  
   const promptText = `
     Đóng vai chuyên gia dinh dưỡng. Tạo thực đơn 1 món cho bữa ${input.meal_type}.
     Khách hàng: ${userProfile?.demographics?.sex}, ${userProfile?.goals?.primary_goal}.
@@ -79,20 +78,23 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     BẮT BUỘC trả về JSON đúng định dạng: ${jsonStructure}
   `;
 
+  // Xóa khoảng trắng thừa nếu có
+  const cleanKey = API_KEY.trim();
+
   for (const modelName of modelsToTry) {
-    console.log(`📡 Đang gọi model: ${modelName}...`);
+    console.log(`📡 Đang gọi model (No-Referrer): ${modelName}...`);
     try {
-      // Gọi API trực tiếp, loại bỏ mọi vấn đề về version thư viện
-      const response = await fetch(`${BASE_URL}/${modelName}:generateContent?key=${API_KEY}`, {
+      // THỦ THUẬT QUAN TRỌNG: referrerPolicy: "no-referrer"
+      const response = await fetch(`${BASE_URL}/${modelName}:generateContent?key=${cleanKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        referrerPolicy: "no-referrer", // <--- Bí kíp để tránh lỗi localhost
         body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
       });
 
       if (!response.ok) {
         const errText = await response.text();
         console.warn(`⚠️ Model ${modelName} lỗi (${response.status}): ${errText}`);
-        // Nếu lỗi 404 (Model not found) hoặc 400 (Bad Request), thử model tiếp theo
         throw new Error(errText);
       }
 
@@ -107,7 +109,7 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     }
   }
 
-  throw new Error(`Không thể tạo thực đơn (Đã thử hết các model). Lỗi cuối cùng: ${lastError?.message}`);
+  throw new Error(`Không thể tạo thực đơn: ${lastError?.message}`);
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
