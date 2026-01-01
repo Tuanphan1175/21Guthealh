@@ -1,7 +1,7 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; // <--- DÁN KEY CỦA BẠN
+const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; // <--- DÁN KEY CỦA BẠN
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const MODEL_NAME = "gemini-2.5-flash";
 
@@ -9,9 +9,9 @@ const MODEL_NAME = "gemini-2.5-flash";
 const GUT_HEALTH_RULES = `
 QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
 1. GIAI ĐOẠN 1 (Ngày 1-3): THANH LỌC. CẤM tuyệt đối tinh bột (cơm, khoai, bún). Ưu tiên Sinh tố xanh, canh, súp, hấp luộc.
-2. GIAI ĐOẠN 2 (Ngày 4-21): PHỤC HỒI. Được ăn tinh bột tốt (Khoai lang, gạo lứt, quinoa). Đa dạng đạm (Cá, gà, hải sản).
-3. DANH SÁCH CẤM: Đường, sữa bò, thịt công nghiệp, đồ chiên xào nhiều dầu, lúa mì.
-4. KHUYẾN KHÍCH: Rau 5 màu, cá hồi, ức gà, các loại hạt, dầu oliu, bơ.
+2. GIAI ĐOẠN 2 (Ngày 4-21): PHỤC HỒI. Được ăn tinh bột tốt (Khoai lang, gạo trắng, khoai từ, khoai sọ). Đa dạng đạm (Cá, gà, hải sản).
+3. DANH SÁCH CẤM: Đường, sữa bò, thịt công nghiệp, đồ chiên xào nhiều dầu, lúa mì, bánh mì, hủ tiếu, bún, phở.
+4. KHUYẾN KHÍCH: Rau 5 màu, cá hồi, ức gà, các loại hạt (mắc ca, óc chó, hạnh nhân), dầu oliu, bơ.
 `;
 
 // --- TỪ ĐIỂN ẢNH AN TOÀN (MAPPING) ---
