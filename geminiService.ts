@@ -1,10 +1,14 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
-// --- DÁN CHÌA KHÓA MỚI CỦA BẠN VÀO ĐÂY ---
-const API_KEY = "AIzaSyAUOOs-fblTPpB4sLop2vjmj405U9nTZco"; 
+// --- CẤU HÌNH ---
+// Key của bạn (Giữ nguyên)
+const API_KEY = "AIzaSyCJ8-8krZ5lozRzQUP1QEppp1hinu1xpv4"; 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// Hàm tạo ảnh (Giữ nguyên)
+// Model Xịn của bạn (ĐÃ SỬA TỪ 1.5 SANG 2.5)
+const MODEL_NAME = "gemini-2.5-flash"; 
+
+// Hàm tạo ảnh (Pollinations AI)
 function getRealFoodImage(text: string): string {
     const prompt = encodeURIComponent(`delicious food photography, ${text}, 8k resolution, cinematic lighting, appetizing`);
     return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&nologo=true&seed=${Math.floor(Math.random() * 9999)}`;
@@ -52,9 +56,6 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
 }
 
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
-  // Dùng model 1.5 Flash vì nó nhanh và ổn định nhất
-  const modelName = "gemini-1.5-flash";
-  
   const promptText = `
     Đóng vai chuyên gia dinh dưỡng. Tạo thực đơn 1 món cho bữa ${input.meal_type}.
     Khách hàng: ${input.user_profile?.demographics?.sex}, Mục tiêu: ${input.user_profile?.goals?.primary_goal}.
@@ -63,7 +64,10 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
   `;
 
   try {
-    const response = await fetch(`${BASE_URL}/${modelName}:generateContent?key=${API_KEY}`, {
+    console.log(`📡 Đang gọi model: ${MODEL_NAME}...`);
+    
+    // Gọi đúng tên model 2.5
+    const response = await fetch(`${BASE_URL}/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
@@ -71,7 +75,7 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Google Error: ${errorText}`);
+        throw new Error(`Google Error (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
