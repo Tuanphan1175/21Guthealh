@@ -140,6 +140,37 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile: initialUserPro
   };
 
   async function generateOneItemForMeal(meal_slot: MealSlot, excludeTitles: string[]) {
+    if (!mealTargets || !currentUserProfile) throw new Error("Thiếu thông tin người dùng hoặc mục tiêu.");
+    
+    // Lấy thông tin điều kiện sức khỏe
+    const conditions = Object.keys(currentUserProfile.health_conditions.flags).filter(k => currentUserProfile.health_conditions.flags[k]);
+    const restrictions = Object.keys(currentUserProfile.dietary_preferences.restrictions).filter(k => currentUserProfile.dietary_preferences.restrictions[k]);
+
+    const input: UserInput = {
+       day_number: day,
+       meal_type: meal_slot, // Gửi đúng loại bữa ăn
+       user_goal: currentUserProfile.goals.primary_goal,
+       conditions: conditions,
+       dietary_restrictions: restrictions,
+       user_profile: currentUserProfile,
+       targets: mealTargets[meal_slot],
+       max_items: 1, // Chỉ yêu cầu 1 món
+       exclude_titles: excludeTitles,
+       personal_note: personalNote,
+       snack_timing: meal_slot === 'snack' ? snackTiming : undefined
+    };
+
+    // Gọi API
+    const result = await getMealSuggestions(input);
+
+    // KIỂM TRA KỸ KẾT QUẢ TRẢ VỀ
+    if (!result || !result.suggested_meals || result.suggested_meals.length === 0) {
+        throw new Error("AI không trả về món ăn nào. Vui lòng thử lại.");
+    }
+
+    // Lấy món đầu tiên trong danh sách trả về (vì mình chỉ xin 1 món)
+    return result.suggested_meals[0];
+  } string[]) {
     if (!mealTargets || !currentUserProfile) throw new Error("Missing targets or user profile");
     
     const conditions = Object.keys(currentUserProfile.health_conditions.flags).filter(k => currentUserProfile.health_conditions.flags[k]);
