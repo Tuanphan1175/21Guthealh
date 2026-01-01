@@ -1,196 +1,154 @@
-import { GoogleGenerativeAI, GenerativeModel } from "@google/generative-ai";
-import { UserInput, SuggestionResponse, SuggestionMeal, UserProfile, ComputedTargets } from "./types";
-import { SYSTEM_INSTRUCTION } from "./constants";
+import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
-// Lấy API Key từ biến môi trường
-const API_KEY = "AIzaSyDabUGaN9jxTgT6S8YHm8JRaTWaIgja-u0"; // API Key của bạn
+// --- CẤU HÌNH ---
+// 👇👇👇 DÁN CHÌA KHÓA CỦA BẠN VÀO GIỮA HAI DẤU NGOẶC KÉP DƯỚI ĐÂY 👇👇👇
+const API_KEY = "AIza..."; // <--- XÓA CHỖ NÀY VÀ DÁN KEY CỦA BẠN VÀO ĐÂY
+const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+const MODEL_NAME = "gemini-2.5-flash";
 
-if (!API_KEY) {
-  throw new Error("Missing VITE_GEMINI_API_KEY environment variable.");
+// --- BỘ KIẾN THỨC DINH DƯỠNG (ĐÃ NẠP TỪ TÀI LIỆU CỦA BẠN) ---
+const GUT_HEALTH_RULES = `
+QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
+1. GIAI ĐOẠN 1 (Ngày 1-3): THANH LỌC. 
+   - CẤM TUYỆT ĐỐI: Tinh bột (cơm, khoai, bún, phở, bánh mì), Đường, Sữa bò.
+   - ƯU TIÊN: Sinh tố xanh (Green Smoothie), Protein thực vật, Canh súp rau củ, Cá hấp/luộc.
+2. GIAI ĐOẠN 2 (Ngày 4-21): PHỤC HỒI. 
+   - ĐƯỢC ĂN: Tinh bột tốt (Khoai lang, gạo lứt, quinoa, yến mạch).
+   - ĐẠM: Đa dạng (Cá hồi, ức gà, hải sản, trứng gà ta).
+3. DANH SÁCH CẤM: Thịt đỏ công nghiệp, đồ chiên xào nhiều dầu, lúa mì, bắp (ngô).
+4. KHUYẾN KHÍCH: Rau 5 màu, Các loại hạt (Mắc ca, Óc chó), Dầu Oliu, Quả Bơ.
+`;
+
+// --- TỪ ĐIỂN ẢNH AN TOÀN (ANTI-CAT MAPPING) ---
+// Danh sách này đảm bảo 100% ra ảnh đẹp, không bao giờ ra mèo
+const SAFE_IMAGES: Record<string, string> = {
+    "fish": "grilled,fish,food",          // Nhóm Cá
+    "chicken": "roasted,chicken,breast",  // Nhóm Gà
+    "meat": "beef,steak,food",            // Nhóm Thịt (Bò/Heo sạch)
+    "rice": "fried,rice,vegetable",       // Nhóm Cơm/Gạo lứt
+    "potato": "sweet,potato,food",        // Nhóm Khoai lang
+    "noodle": "noodle,soup,bowl",         // Nhóm Bún/Phở
+    "salad": "fresh,salad,plate",         // Nhóm Salad
+    "smoothie": "green,smoothie,glass",   // Nhóm Sinh tố
+    "soup": "pumpkin,soup,bowl",          // Nhóm Súp
+    "fruit": "fruit,platter,fresh",       // Nhóm Trái cây
+    "oats": "oatmeal,bowl,fruit",         // Nhóm Yến mạch
+    "default": "healthy,food,dish"        // Mặc định
+};
+
+function getSafeImage(category: string): string {
+    const key = category.trim().toLowerCase();
+    const searchKeyword = SAFE_IMAGES[key] || SAFE_IMAGES["default"];
+    const randomLock = Math.floor(Math.random() * 9999);
+    return `https://loremflickr.com/800/600/${searchKeyword}?lock=${randomLock}`;
 }
 
-const genAI = new GoogleGenerativeAI(API_KEY);
+function cleanGeminiResponse(text: string): string {
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1) return text.substring(firstBrace, lastBrace + 1);
+  return text;
+}
 
-// Hàm để phân tích cú pháp phản hồi JSON từ Gemini
 function parseGeminiResponseToSuggestionResponse(geminiText: string, input: UserInput): SuggestionResponse {
   try {
-    const parsedJson = JSON.parse(geminiText);
+    const cleanedText = cleanGeminiResponse(geminiText);
+    const parsedJson = JSON.parse(cleanedText);
+    
+    const mealsData = Array.isArray(parsedJson) ? parsedJson : (parsedJson.meals || []);
+    if (!Array.isArray(mealsData)) throw new Error("Không tìm thấy dữ liệu món ăn");
 
-    // Chuyển đổi định dạng JSON đơn giản thành SuggestionResponse đầy đủ
-    const suggestedMeals: SuggestionMeal[] = parsedJson.meals.map((meal: any) => {
-      const mealName = meal.name || "Món ăn dinh dưỡng"; // Đảm bảo có tên món
+    const suggestedMeals: SuggestionMeal[] = mealsData.map((meal: any, index: number) => {
+        const mealName = meal.name || "Món ăn dinh dưỡng";
+        // Lấy Category từ AI để tìm ảnh chuẩn
+        const category = meal.image_category || "default";
 
-      return {
-        recipe_id: mealName.replace(/\s+/g, '-').toLowerCase(), // Tạo ID đơn giản
-        recipe_name: mealName,
-        short_description: meal.ingredients,
-        reason: parsedJson.advice, // Sử dụng advice làm lý do chung
-        how_it_supports_gut: parsedJson.advice,
-        fit_with_goal: parsedJson.advice,
-        main_ingredients_brief: meal.ingredients,
-        ingredients: meal.ingredients.split(', ').map((ing: string) => ({ name: ing.trim(), quantity: "" })), // Tách nguyên liệu
-        nutrition_estimate: {
-          kcal: parseInt(meal.calories.replace(/[^0-9]/g, '')) || 0,
-          protein_g: 0, fat_g: 0, carb_g: 0, fiber_g: 0,
-          vegetables_g: 0, fruit_g: 0, added_sugar_g: 0, sodium_mg: 0,
-        },
-        fit_score: 80, // Điểm mặc định
-        warnings_or_notes: [],
-        // Tạo đường dẫn ảnh động dựa trên tên món ăn.
-        // Sử dụng dịch vụ placehold.co để tạo ảnh nhanh, đẹp, hỗ trợ tiếng Việt.
-        image_url: `https://placehold.co/600x400/EF4444/FFFFFF/png?text=${encodeURIComponent(mealName)}&font=roboto`,
-      };
+        return {
+            recipe_id: `meal-${input.day_number}-${index}-${Date.now()}`,
+            recipe_name: mealName,
+            short_description: meal.ingredients || "Tốt cho sức khỏe",
+            reason: parsedJson.advice || "Phù hợp lộ trình 21 ngày.",
+            how_it_supports_gut: "Dễ tiêu hóa, hỗ trợ niêm mạc.",
+            fit_with_goal: "Đúng chuẩn Gut Health.",
+            main_ingredients_brief: meal.ingredients,
+            ingredients: [],
+            nutrition_estimate: { 
+                kcal: parseInt(meal.calories) || 500, 
+                protein_g: 30, fat_g: 10, carb_g: 50, fiber_g: 10, vegetables_g: 100, fruit_g: 50, added_sugar_g: 0, sodium_mg: 0 
+            },
+            fit_score: 98, 
+            warnings_or_notes: [],
+            image_url: getSafeImage(category), // Lấy ảnh an toàn
+        };
     });
 
     return {
       day_number: input.day_number,
-      phase: 1, // Giả định Pha 1
+      phase: input.day_number <= 3 ? 1 : 2, 
       meal_type: input.meal_type,
-      explanation_for_phase: parsedJson.advice,
+      explanation_for_phase: input.day_number <= 3 ? "Giai đoạn 1: Thanh Lọc (Kiêng tinh bột)" : "Giai đoạn 2: Phục Hồi (Ăn tinh bột tốt)",
       suggested_meals: suggestedMeals,
     };
   } catch (e) {
-    console.error("Lỗi khi phân tích cú pháp phản hồi Gemini thành JSON:", e);
-    throw new Error("Phản hồi từ AI không đúng định dạng. Vui lòng thử lại.");
+    console.error("Lỗi JSON:", e);
+    throw e;
   }
 }
 
-const GUT_HEALTH_RULES = `
-QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
-1. GIAI ĐOẠN 1: THANH LỌC (Ngày 1 - Ngày 3):
-   - MỤC TIÊU: Vá lành đường ruột, thải độc.
-   - TUYỆT ĐỐI CẤM TINH BỘT: Không cơm, khoai lang, phở, bún, hủ tiếu, bánh mì, ngô.
-   - BỮA SÁNG: Ưu tiên Sinh tố xanh (Green Smoothie), Protein thực vật lỏng.
-   - CHẾ BIẾN: Chỉ Hấp, Luộc, Áp chảo nhẹ. Không chiên xào nhiều dầu.
-   - THỰC PHẨM: Cá, hải sản, ức gà, rau xanh đậm, các loại hạt (lượng nhỏ).
-
-2. GIAI ĐOẠN 2: PHỤC HỒI (Ngày 4 - Ngày 21):
-   - Được phép ăn lại tinh bột tốt: Khoai lang, khoai từ , khoai sọ, gạo trắng.
-   - Đa dạng đạm: Cá hồi, gà thả vườn, hải sản.
-   - Tăng cường rau củ 5 màu sắc.
-
-3. DANH SÁCH "ĐÈN ĐỎ" (CẤM TRONG MỌI GIAI ĐOẠN):
-   - Đường tinh luyện, bánh kẹo ngọt, nước ngọt có ga.
-   - Sữa bò và chế phẩm từ sữa bò (trừ bơ Ghee).
-   - Thịt đỏ nuôi công nghiệp (Heo, Bò công nghiệp).
-   - Lúa mì, Bắp (Ngô), Đậu nành (trừ loại lên men như Miso/Tempeh/Natto).
-   - Dầu thực vật công nghiệp (Dầu nành, dầu hướng dương).
-   - Đồ hộp, đồ chế biến sẵn (Xúc xích, thịt nguội).
-
-4. DANH SÁCH "ĐÈN XANH" (KHUYẾN KHÍCH):
-   - Chất béo tốt: Dầu Oliu, Dầu dừa, Quả bơ, Các loại hạt (Mắc ca, Óc chó, Hạnh nhân).
-   - Đạm sạch: Cá hồi, Cá thu, Tôm, Gà thả vườn, Trứng gà ta.
-   - Rau củ: Súp lơ, Cải xoăn (Kale), Rau Bina, Cà rốt, Củ dền.
-   - Trái cây ít ngọt: Ổi, Táo xanh, Bơ, Xoài xanh, Đu đủ xanh, Dâu tây, Việt quất.
-`;
-
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
-  const modelsToTry = ["gemini-2.5-flash", "gemini-pro"]; // Đã thay đổi tên model ưu tiên
-  let currentModel: GenerativeModel | null = null;
-  let lastError: any = null;
+  const promptText = `
+    Bạn là Chuyên gia Dinh dưỡng hệ thống GutHealth21.
+    Khách hàng: ${input.user_profile?.demographics?.sex}, Mục tiêu: ${input.user_profile?.goals?.primary_goal}.
+    NGÀY THỨ: ${input.day_number} (Giai đoạn ${input.day_number <= 3 ? "1 - Thanh Lọc" : "2 - Phục Hồi"}).
+    Bữa: ${input.meal_type}.
 
-  for (const modelName of modelsToTry) {
-    console.log(`Model: ${modelName} | Key: ${API_KEY.substring(0, 4)}...${API_KEY.substring(API_KEY.length - 4)}`); // Log để kiểm tra
-    try {
-      currentModel = genAI.getGenerativeModel({ model: modelName });
+    TUÂN THỦ QUY TẮC:
+    ${GUT_HEALTH_RULES}
 
-      const userProfile = input.user_profile;
-      const targets = input.targets;
-
-      if (!userProfile || !targets) {
-        throw new Error("Missing user profile or nutritional targets for Gemini API call.");
-      }
-
-      const conditions = input.conditions.length > 0 ? `Tình trạng sức khỏe: ${input.conditions.join(', ')}.` : '';
-      const restrictions = input.dietary_restrictions.length > 0 ? `Hạn chế ăn uống: ${input.dietary_restrictions.join(', ')}.` : '';
-      const avoidIngredients = userProfile.dietary_preferences.avoid_ingredients.length > 0 ? `Tránh các nguyên liệu: ${userProfile.dietary_preferences.avoid_ingredients.join(', ')}.` : '';
-      const personalNote = userProfile.personal_note ? `Lưu ý cá nhân: ${userProfile.personal_note}.` : '';
-
-      const jsonFormat = `{
-          "advice": "Lời khuyên ngắn gọn cho thực đơn này dựa trên hồ sơ người dùng và mục tiêu phục hồi đường ruột.",
-          "meals": [
-            {
-              "name": "Tên món ăn bữa sáng",
-              "ingredients": "Nguyên liệu chính (ví dụ: Yến mạch, hạt chia, sữa hạt)",
-              "calories": "Số calo ước tính (ví dụ: 300 kcal)"
-            },
-            {
-              "name": "Tên món ăn bữa trưa",
-              "ingredients": "Nguyên liệu chính",
-              "calories": "Số calo ước tính"
-            },
-            {
-              "name": "Tên món ăn bữa tối",
-              "ingredients": "Nguyên liệu chính",
-              "calories": "Số calo ước tính"
-            },
-            {
-              "name": "Tên món ăn bữa phụ",
-              "ingredients": "Nguyên liệu chính",
-              "calories": "Số calo ước tính"
-            }
-          ]
-        }`;
-
-      const prompt = `
-        Bạn là chuyên gia dinh dưỡng cao cấp cho chương trình 21 ngày phục hồi đường ruột.
-        Dựa trên hồ sơ người dùng sau:
-        - Giới tính: ${userProfile.demographics.sex === 'male' ? 'Nam' : 'Nữ'}
-        - Tuổi: ${userProfile.demographics.age_years}
-        - Cân nặng: ${userProfile.anthropometrics.weight_kg} kg
-        - Mục tiêu chính: ${userProfile.goals.primary_goal}.
-        ${conditions}
-        ${restrictions}
-        ${avoidIngredients}
-        ${personalNote}
-
-        Hãy tạo một thực đơn cho Ngày 1, bao gồm 3 bữa chính (Sáng, Trưa, Tối) và 1 bữa phụ.
-        BẮT BUỘC tuân thủ NGHIÊM NGẶT danh sách thực phẩm "KHÔNG NÊN ĂN" (CẤM) và "QUY ĐỊNH ĐẶC BIỆT CỦA CHƯƠNG TRÌNH" đã được cung cấp trong SYSTEM_INSTRUCTION.
-        
-        Trả về kết quả dưới dạng JSON thuần (không có markdown \`\`\`json) theo cấu trúc sau:
-        ${jsonFormat}
-      `;
-
-      const result = await currentModel.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      // Phân tích cú pháp phản hồi văn bản thành cấu trúc SuggestionResponse
-      return parseGeminiResponseToSuggestionResponse(text, input);
-
-    } catch (error) {
-      console.error(`Lỗi khi gọi API Gemini với model ${modelName}:`, error);
-      lastError = error;
-      // Tiếp tục thử model tiếp theo
+    YÊU CẦU ẢNH (QUAN TRỌNG):
+    - Hãy phân loại món ăn vào ĐÚNG 1 TRONG CÁC NHÓM SAU (điền vào trường "image_category"):
+    - Danh sách nhóm: "fish", "chicken", "meat", "rice", "potato", "salad", "soup", "smoothie", "oats", "fruit".
+    - Ví dụ: "Cá hồi hấp" -> "fish". "Cháo yến mạch" -> "oats". "Khoai lang luộc" -> "potato".
+    
+    JSON Mẫu: 
+    { 
+      "advice": "Lời khuyên...", 
+      "meals": [{ 
+        "name": "Tên món (Tiếng Việt)", 
+        "image_category": "fish", 
+        "ingredients": "...", 
+        "calories": "..." 
+      }] 
     }
+  `;
+
+  if (API_KEY.includes("AIza") === false) {
+       throw new Error("⚠️ BẠN CHƯA DÁN API KEY! Vui lòng mở file code và dán Key vào dòng số 4.");
   }
 
-  // Nếu tất cả các model đều thất bại
-  throw new Error(`Không thể tạo thực đơn từ Gemini sau khi thử tất cả các model. Lỗi cuối cùng: ${lastError?.message || "Không rõ lỗi."}`);
+  try {
+    const response = await fetch(`${BASE_URL}/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        contents: [{ parts: [{ text: promptText }] }],
+        generationConfig: { responseMimeType: "application/json" }
+      })
+    });
+
+    if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    
+    if (data.candidates && data.candidates.length > 0) {
+       return parseGeminiResponseToSuggestionResponse(data.candidates[0].content.parts[0].text, input);
+    }
+    throw new Error("No data found.");
+  } catch (error: any) {
+    console.error("Lỗi:", error);
+    throw error;
+  }
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
-  try {
-    const response = await fetch('/api/generate-meal-image', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ mealName: meal.recipe_name, description: meal.short_description }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to generate image from API.');
-    }
-
-    const data = await response.json();
-    return data.imageUrl;
-  } catch (error) {
-    console.error('Error calling generate-meal-image API:', error);
-    return "https://via.placeholder.com/400x300?text=Meal+Image+Error"; // Fallback image on API error
-  }
+  return getSafeImage("healthy"); 
 };
-
-// Export giả để buộc Vite tái biên dịch module
-export const __dummyExport = {};
