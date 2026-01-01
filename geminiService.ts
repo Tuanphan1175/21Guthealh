@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- QUAN TRỌNG: DÁN API KEY MỚI CỦA BẠN VÀO DÒNG DƯỚI ---
-const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; 
+const API_KEY = "AIzaSyCJ8-8krZ5IozRzQUP1QEppp1hinu1xpv4"; 
 // Ví dụ: const API_KEY = "AIzaSyDxxxxxxxxxxxx...";
 
 if (!API_KEY || API_KEY.includes("DÁN_KEY")) {
