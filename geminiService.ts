@@ -2,7 +2,7 @@ import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
 // 👇👇👇 DÁN KEY CỦA BẠN VÀO DƯỚI ĐÂY 👇👇👇
-const API_KEY = "DÁN_KEY_CỦA_BẠN_VÀO_ĐÂY"; 
+const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const MODEL_NAME = "gemini-2.5-flash"; // Dùng model bạn đang có
 
