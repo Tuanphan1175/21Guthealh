@@ -2,7 +2,7 @@ import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
 // Key mới của bạn (Đã hoạt động tốt)
-const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; 
+const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 // Model xịn (Đã kết nối thành công)
