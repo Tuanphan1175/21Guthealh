@@ -20,15 +20,38 @@ const SINH_TO_XANH_RECIPE = `
 - Chất tạo ngọt: Cỏ ngọt stevia / Đường mía nâu / Mật ong tự nhiên
 - Nước lọc và đá viên
 `;
-
-// --- QUY TẮC GUT HEALTH ---
+// --- BỘ KIẾN THỨC DINH DƯỠNG (ĐÃ NẠP TỪ TÀI LIỆU CỦA BẠN) ---
 const GUT_HEALTH_RULES = `
 QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
-1. GIAI ĐOẠN 1 (Ngày 1-3): THANH LỌC. CẤM TINH BỘT, SỮA BÒ. Bắt buộc Sinh Tố Xanh buổi sáng.
-2. GIAI ĐOẠN 2 (Ngày 4-21): PHỤC HỒI. Ăn tinh bột tốt (khoai, gạo lứt).
-3. DANH SÁCH CẤM: Thịt công nghiệp, đường, đồ chiên, lúa mì.
-`;
+1. CÔNG THỨC "SINH TỐ XANH" CHUẨN (Bắt buộc cho Bữa Sáng Giai Đoạn 1):
+   - Nguyên liệu BẮT BUỘC: 1 cup Xà lách, 1/2 cup Rau dền non, 1 cây Bạc hà (lấy cả thân), 1/2 trái Bơ, 1/2 quả Táo, 1 quả Cà chua (bỏ vỏ hạt), Nước cốt chanh, Nước lọc.
+   - Chất tạo ngọt (tùy chọn): Cỏ ngọt Stevia, Đường mía nâu hoặc Mật ong tự nhiên.
+   - Tuyệt đối KHÔNG thay đổi nguyên liệu này trong 3 ngày đầu.
+2. GIAI ĐOẠN 1: THANH LỌC (Ngày 1 - Ngày 3):
+   - MỤC TIÊU: Vá lành đường ruột, thải độc.
+   - TUYỆT ĐỐI CẤM TINH BỘT: Không cơm, phở, bún, bánh mì, khoai lang, ngô.
+   - BỮA SÁNG: Ưu tiên Sinh tố xanh (Green Smoothie), Protein thực vật lỏng.
+   - CHẾ BIẾN: Chỉ Hấp, Luộc, Áp chảo nhẹ. Không chiên xào nhiều dầu.
+   - THỰC PHẨM: Cá, hải sản, ức gà, rau xanh đậm, các loại hạt (lượng nhỏ).
 
+3. GIAI ĐOẠN 2: PHỤC HỒI (Ngày 4 - Ngày 21):
+   - Được phép ăn lại tinh bột tốt: Khoai lang, Khoai từ, khoai sọ.
+   - Đa dạng đạm: Cá hồi, gà thả vườn, hải sản.
+   - Tăng cường rau củ 5 màu sắc.
+
+4. DANH SÁCH "ĐÈN ĐỎ" (CẤM TRONG MỌI GIAI ĐOẠN):
+   - Đường tinh luyện, bánh kẹo ngọt, nước ngọt có ga.
+   - Sữa bò và chế phẩm từ sữa bò (trừ bơ Ghee).
+   - Thịt đỏ nuôi công nghiệp (Heo, Bò công nghiệp).
+   - Lúa mì, Bắp (Ngô), Đậu nành (trừ loại lên men như Miso/Tempeh/Natto), các loại đậu.
+   - Dầu thực vật công nghiệp (Dầu nành, dầu hướng dương).
+   - Đồ hộp, đồ chế biến sẵn (Xúc xích, thịt nguội).
+
+5. DANH SÁCH "ĐÈN XANH" (KHUYẾN KHÍCH):
+   - Chất béo tốt: Dầu Oliu, Dầu dừa, Quả bơ, Các loại hạt (Mắc ca, Óc chó, Hạnh nhân).
+   - Đạm sạch: Cá hồi, Cá thu, Tôm, Gà thả vườn, Trứng gà ta.
+   - Rau củ: Súp lơ, Cải xoăn (Kale), Rau Bina, Cà rốt, Củ dền.
+   - Trái cây ít ngọt: Ổi, Táo xanh, Bơ, Dâu tây, Việt quất.
 // --- TỪ ĐIỂN ẢNH (ANTI-CAT) ---
 const SAFE_IMAGES: Record<string, string> = {
     "smoothie": "green,smoothie,glass",
