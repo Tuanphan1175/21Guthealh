@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/generate-meal-image",
+      "destination": "/api/generate-meal-image.ts"
+    }
+  ]
+}

@@ -36,9 +36,7 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
         },
         fit_score: 80, // Điểm mặc định
         warnings_or_notes: [],
-        // Tạo đường dẫn ảnh động dựa trên tên món ăn.
-        // Sử dụng dịch vụ placehold.co để tạo ảnh nhanh, đẹp, hỗ trợ tiếng Việt.
-        image_url: `https://placehold.co/600x400/EF4444/FFFFFF/png?text=${encodeURIComponent(mealName)}&font=roboto`,
+        image_url: "", // Sẽ được tạo bởi RecipeCard
       };
     });
 
@@ -141,10 +139,26 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
-  // Giữ nguyên hàm này nếu bạn vẫn muốn sử dụng Edge Function cho việc tạo ảnh
-  // hoặc bạn có thể thay đổi để gọi một API tạo ảnh khác.
-  // Hiện tại, tôi sẽ để nó như cũ.
-  return "https://via.placeholder.com/400x300?text=Meal+Image"; // Placeholder image
+  try {
+    const response = await fetch('/api/generate-meal-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ mealName: meal.recipe_name, description: meal.short_description }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to generate image from API.');
+    }
+
+    const data = await response.json();
+    return data.imageUrl;
+  } catch (error) {
+    console.error('Error calling generate-meal-image API:', error);
+    return "https://via.placeholder.com/400x300?text=Meal+Image+Error"; // Fallback image on API error
+  }
 };
 
 // Export giả để buộc Vite tái biên dịch module

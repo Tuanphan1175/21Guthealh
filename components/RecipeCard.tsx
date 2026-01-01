@@ -6,7 +6,7 @@ import {
   Check, UtensilsCrossed, Leaf, Egg, Droplets, 
   Wheat, Pizza, Download 
 } from 'lucide-react';
-import { generateMealImage } from '../geminiService';
+import { generateMealImage } from '../geminiService'; // Import generateMealImage
 import GutIcon from './GutIcon';
 
 interface RecipeCardProps {
@@ -78,18 +78,28 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
   const [generatingImage, setGeneratingImage] = useState(false);
   const n = meal.nutrition_estimate;
   
-  const handleGenerateImage = () => {
+  const handleGenerateImage = async () => { // Make this async
+    if (generatingImage) return;
+    setGeneratingImage(true);
     setImageError(false); // Reset lỗi khi tạo ảnh mới
-    const newUnsplashUrl = `${defaultUnsplashUrl}&${Date.now()}`; // Thêm timestamp để làm mới cache
-    setImageUrl(newUnsplashUrl);
-    if (onUpdate) {
-      onUpdate({ ...meal, image_url: newUnsplashUrl });
+    try {
+      const newImageUrl = await generateMealImage(meal); // Call the API endpoint
+      setImageUrl(newImageUrl);
+      if (onUpdate) {
+        onUpdate({ ...meal, image_url: newImageUrl });
+      }
+    } catch (err) {
+      console.error("Failed to generate image from API:", err);
+      setImageError(true);
+      setImageUrl(fallbackImageUrl); // Fallback on API error
+    } finally {
+      setGeneratingImage(false);
     }
   };
 
-  const handleImageError = () => {
+  const handleImageLoadError = () => { // Renamed to avoid confusion with API error
     setImageError(true);
-    setImageUrl(fallbackImageUrl); // Sử dụng ảnh dự phòng khi có lỗi
+    setImageUrl(fallbackImageUrl); // Sử dụng ảnh dự phòng khi có lỗi tải ảnh
   };
 
   const getOverallScore = () => {
@@ -124,7 +134,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
               src={imageUrl} 
               alt={meal.recipe_name} 
               className="w-full h-full object-cover animate-in fade-in duration-700"
-              onError={handleImageError} // Bắt lỗi tải ảnh
+              onError={handleImageLoadError} // Bắt lỗi tải ảnh
             />
             
             {/* Overlay Actions for existing image */}
@@ -172,7 +182,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
         {/* Loading Overlay */}
         {generatingImage && (
           <div className="absolute inset-0 bg-white/90 backdrop-blur-lg flex flex-col items-center justify-center gap-6 z-10 animate-in fade-in duration-300">
-            <Loader2 size={64} className="mx-auto text-indigo-600 animate-spin" />
+            <Loader2 size={64} className="text-indigo-600 animate-spin" />
             <div className="text-center space-y-2">
               <p className="text-sm font-black text-indigo-900 uppercase tracking-[0.2em] animate-pulse">Đang phác họa món ăn...</p>
               <p className="text-xs font-bold text-slate-500">Quá trình này có thể mất vài giây</p>
@@ -218,7 +228,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
               }`}
               title="Tạo ảnh món ăn"
             >
-              {generatingImage ? <Loader2 size={24} className="animate-spin" /> : <Sparkles size={24} />}
+              {generatingImage ? <Loader2 size={24} className="animate-spin" /> : <RefreshCw size={24} />}
             </button>
 
             <button
