@@ -8,10 +8,34 @@ const MODEL_NAME = "gemini-2.5-flash";
 // --- BỘ KIẾN THỨC DINH DƯỠNG (ĐÃ NẠP) ---
 const GUT_HEALTH_RULES = `
 QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
-1. GIAI ĐOẠN 1 (Ngày 1-3): THANH LỌC. CẤM tuyệt đối tinh bột (cơm, khoai, bún). Ưu tiên Sinh tố xanh, canh, súp, hấp luộc.
-2. GIAI ĐOẠN 2 (Ngày 4-21): PHỤC HỒI. Được ăn tinh bột tốt (Khoai lang, gạo trắng, khoai từ, khoai sọ). Đa dạng đạm (Cá, gà, hải sản).
-3. DANH SÁCH CẤM: Đường, sữa bò, thịt công nghiệp, đồ chiên xào nhiều dầu, lúa mì, bánh mì, hủ tiếu, bún, phở.
-4. KHUYẾN KHÍCH: Rau 5 màu, cá hồi, ức gà, các loại hạt (mắc ca, óc chó, hạnh nhân), dầu oliu, bơ.
+// --- KIẾN THỨC CỐT LÕI TỪ TÀI LIỆU CỦA BẠN ---
+const GUT_HEALTH_RULES = `
+QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
+1. GIAI ĐOẠN 1: THANH LỌC (Ngày 1 - Ngày 3):
+   - MỤC TIÊU: Vá lành đường ruột, thải độc.
+   - TUYỆT ĐỐI CẤM TINH BỘT: Không cơm, khoai lang, phở, bún, hủ tiếu, bánh mì, ngô.
+   - BỮA SÁNG: Ưu tiên Sinh tố xanh (Green Smoothie), Protein thực vật lỏng.
+   - CHẾ BIẾN: Chỉ Hấp, Luộc, Áp chảo nhẹ. Không chiên xào nhiều dầu.
+   - THỰC PHẨM: Cá, hải sản, ức gà, rau xanh đậm, các loại hạt (lượng nhỏ).
+
+2. GIAI ĐOẠN 2: PHỤC HỒI (Ngày 4 - Ngày 21):
+   - Được phép ăn lại tinh bột tốt: Khoai lang, khoai từ , khoai sọ, gạo trắng.
+   - Đa dạng đạm: Cá hồi, gà thả vườn, hải sản.
+   - Tăng cường rau củ 5 màu sắc.
+
+3. DANH SÁCH "ĐÈN ĐỎ" (CẤM TRONG MỌI GIAI ĐOẠN):
+   - Đường tinh luyện, bánh kẹo ngọt, nước ngọt có ga.
+   - Sữa bò và chế phẩm từ sữa bò (trừ bơ Ghee).
+   - Thịt đỏ nuôi công nghiệp (Heo, Bò công nghiệp).
+   - Lúa mì, Bắp (Ngô), Đậu nành (trừ loại lên men như Miso/Tempeh/Natto).
+   - Dầu thực vật công nghiệp (Dầu nành, dầu hướng dương).
+   - Đồ hộp, đồ chế biến sẵn (Xúc xích, thịt nguội).
+
+4. DANH SÁCH "ĐÈN XANH" (KHUYẾN KHÍCH):
+   - Chất béo tốt: Dầu Oliu, Dầu dừa, Quả bơ, Các loại hạt (Mắc ca, Óc chó, Hạnh nhân).
+   - Đạm sạch: Cá hồi, Cá thu, Tôm, Gà thả vườn, Trứng gà ta.
+   - Rau củ: Súp lơ, Cải xoăn (Kale), Rau Bina, Cà rốt, Củ dền.
+   - Trái cây ít ngọt: Ổi, Táo xanh, Bơ, Xoài xanh, Đu đủ xanh, Dâu tây, Việt quất.
 `;
 
 // --- TỪ ĐIỂN ẢNH AN TOÀN (MAPPING) ---
