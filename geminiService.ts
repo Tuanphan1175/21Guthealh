@@ -2,7 +2,7 @@ import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
 // 👇👇👇 DÁN KEY CỦA BẠN VÀO GIỮA HAI DẤU NGOẶC KÉP DƯỚI ĐÂY 👇👇👇
-const API_KEY = "DÁN_KEY_CỦA_BẠN_VÀO_ĐÂY"; // <--- Xóa cái này đi và dán key AIza... vào
+const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; // <--- Xóa cái này đi và dán key AIza... vào
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 // --- QUAY LẠI MODEL 2.5 (VÌ TÀI KHOẢN BẠN BẮT BUỘC DÙNG CÁI NÀY) ---
