@@ -1,10 +1,13 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-// 👇👇👇 DÁN CHÌA KHÓA CỦA BẠN VÀO GIỮA HAI DẤU NGOẶC KÉP DƯỚI ĐÂY 👇👇👇
-const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; // <--- XÓA CHỖ NÀY VÀ DÁN KEY CỦA BẠN VÀO ĐÂY
+// 👇👇👇 DÁN KEY CỦA BẠN VÀO GIỮA 2 DẤU NGOẶC KÉP 👇👇👇
+const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-const MODEL_NAME = "gemini-2.5-flash";
+
+// --- SỬA LỖI 429/404: DÙNG MODEL CHUẨN QUỐC TẾ (1.5 FLASH) ---
+// Model này chạy được với mọi loại Key, nhanh và hạn mức cao nhất
+const MODEL_NAME = "gemini-1.5-flash";
 
 // --- BỘ KIẾN THỨC DINH DƯỠNG (ĐÃ NẠP TỪ TÀI LIỆU CỦA BẠN) ---
 const GUT_HEALTH_RULES = `
