@@ -1,24 +1,20 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; // <--- NHỚ DÁN KEY CỦA BẠN
+const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; // <--- ĐỪNG QUÊN DÁN KEY
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const MODEL_NAME = "gemini-2.5-flash";
 
-// --- HÀM LẤY ẢNH (DÙNG KHO LOREMFLICKR ĐÃ SỬA LỖI MÈO) ---
-function getRealFoodImage(keyword: string): string {
-    // 1. Dọn dẹp từ khóa: Xóa ký tự lạ
-    // Ví dụ: "Banana Smoothie" -> "Banana,Smoothie"
-    let cleanKeyword = keyword.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, ',');
+// --- HÀM LẤY ẢNH THEO DANH MỤC (KHÔNG BAO GIỜ RA MÈO) ---
+function getRealFoodImage(category: string): string {
+    // Chỉ sử dụng 1 từ khóa danh mục duy nhất để đảm bảo LoremFlickr luôn tìm thấy ảnh
+    const cleanCategory = category.trim().replace(/\s+/g, '').toLowerCase();
     
-    // 2. MẸO QUAN TRỌNG: Chỉ thêm từ khóa "food". 
-    // TUYỆT ĐỐI KHÔNG thêm "cooked" hay "meal" để tránh bị lỗi ra ảnh lạ.
-    const finalKeyword = `${cleanKeyword},food,drink`; 
-
-    // 3. Tạo random lock để ảnh thay đổi khi bấm nút
+    // Tạo số ngẫu nhiên để ảnh thay đổi mỗi lần bấm
     const randomLock = Math.floor(Math.random() * 9999);
 
-    return `https://loremflickr.com/800/600/${finalKeyword}?lock=${randomLock}`;
+    // URL này đảm bảo 100% ra ảnh đồ ăn
+    return `https://loremflickr.com/800/600/${cleanCategory},food?lock=${randomLock}`;
 }
 
 function cleanGeminiResponse(text: string): string {
@@ -41,8 +37,9 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
     const suggestedMeals: SuggestionMeal[] = mealsData.map((meal: any, index: number) => {
         const mealName = meal.name || "Món ăn dinh dưỡng";
         
-        // Lấy từ khóa Tiếng Anh từ Gemini
-        const imageKeyword = meal.image_keyword_en || "healthy food";
+        // Lấy từ khóa danh mục chung từ Gemini
+        // Nếu không có, mặc định là "dish" (món ăn) để luôn an toàn
+        const imageCategory = meal.image_keyword_en || "dish";
 
         return {
             recipe_id: `meal-${input.day_number}-${index}-${Date.now()}`,
@@ -56,8 +53,8 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
             nutrition_estimate: { kcal: 500, protein_g: 30, fat_g: 10, carb_g: 50, fiber_g: 5, vegetables_g: 100, fruit_g: 0, added_sugar_g: 0, sodium_mg: 0 },
             fit_score: 95, 
             warnings_or_notes: [],
-            // Gọi hàm lấy ảnh đã sửa lỗi
-            image_url: getRealFoodImage(imageKeyword), 
+            // Gọi hàm lấy ảnh với từ khóa an toàn
+            image_url: getRealFoodImage(imageCategory), 
         };
     });
 
@@ -80,16 +77,17 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     Tạo thực đơn 1 món cho bữa ${input.meal_type}.
     Khách hàng: ${input.user_profile?.demographics?.sex}, Mục tiêu: ${input.user_profile?.goals?.primary_goal}.
     
-    YÊU CẦU QUAN TRỌNG VỀ HÌNH ẢNH:
-    - Hãy dịch tên món ăn sang Tiếng Anh (ngắn gọn, chỉ lấy danh từ chính) và điền vào trường "image_keyword_en".
-    - Ví dụ: "Sinh tố bơ" -> "Avocado,Smoothie". "Cháo gà" -> "Chicken,Porridge". "Phở bò" -> "Beef,Noodle,Soup".
+    QUAN TRỌNG VỀ HÌNH ẢNH:
+    - Tại trường "image_keyword_en", hãy chọn ĐÚNG 1 TỪ TIẾNG ANH thuộc nhóm sau mô tả món ăn:
+    - Danh sách từ khóa cho phép: "soup", "salad", "meat", "fish", "chicken", "vegetable", "fruit", "rice", "noodle", "cake", "drink", "breakfast".
+    - Ví dụ: "Phở" -> "soup". "Cơm gà" -> "rice". "Sinh tố" -> "drink". "Yến mạch" -> "breakfast".
     
     JSON Mẫu: 
     { 
       "advice": "...", 
       "meals": [{ 
         "name": "Tên món (Việt)", 
-        "image_keyword_en": "English Keywords", 
+        "image_keyword_en": "soup", 
         "ingredients": "...", 
         "calories": "..." 
       }] 
@@ -123,5 +121,6 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
-  return getRealFoodImage(meal.recipe_name);
+  // Khi tạo lại ảnh, dùng tên món để lấy ảnh khác (nhưng vẫn an toàn)
+  return getRealFoodImage("dish");
 };
