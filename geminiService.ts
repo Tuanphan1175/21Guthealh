@@ -1,25 +1,22 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; // <--- DÁN KEY CỦA BẠN
+const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; // <--- DÁN KEY CỦA BẠN
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const MODEL_NAME = "gemini-2.5-flash";
 
-// --- HÀM LẤY ẢNH LINH HOẠT (MỎ NEO KÉP) ---
-function getRealFoodImage(englishName: string, category: string): string {
-    // 1. Xử lý tên món cụ thể (Để lấy đúng màu/loại)
+// --- HÀM LẤY ẢNH (TỐI GIẢN HÓA) ---
+function getRealFoodImage(simpleKeyword: string): string {
+    // 1. Làm sạch từ khóa (chỉ giữ lại chữ cái và dấu phẩy)
     // Ví dụ: "Green Smoothie" -> "Green,Smoothie"
-    const specificKeyword = englishName.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, ',');
+    const finalKeyword = simpleKeyword.trim().replace(/ /g, ',');
 
-    // 2. Xử lý tên nhóm an toàn (Để tránh ra ảnh rác)
-    const safeCategory = category.trim().toLowerCase();
-
-    // 3. Kết hợp: Cụ thể + An toàn + Food
-    // Ví dụ: "Green,Smoothie,drink,food" -> Chắc chắn ra sinh tố xanh
-    const finalKeyword = `${specificKeyword},${safeCategory},food`;
+    // 2. Thêm "food" để đảm bảo không ra vật thể lạ
+    // Cấu trúc: TỪ_KHÓA_NGẮN + food
+    const searchString = `${finalKeyword},food`; 
 
     const randomLock = Math.floor(Math.random() * 9999);
-    return `https://loremflickr.com/800/600/${finalKeyword}?lock=${randomLock}`;
+    return `https://loremflickr.com/800/600/${searchString}?lock=${randomLock}`;
 }
 
 function cleanGeminiResponse(text: string): string {
@@ -42,9 +39,8 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
     const suggestedMeals: SuggestionMeal[] = mealsData.map((meal: any, index: number) => {
         const mealName = meal.name || "Món ăn dinh dưỡng";
         
-        // Lấy 2 dữ liệu từ Gemini: Tên Tiếng Anh (Cụ thể) & Nhóm (An toàn)
-        const englishName = meal.image_keyword_en || "healthy food";
-        const category = meal.image_category || "dish";
+        // Lấy từ khóa SIÊU NGẮN từ Gemini (Ví dụ: "Green Smoothie")
+        const searchKey = meal.image_search_term || "healthy food";
 
         return {
             recipe_id: `meal-${input.day_number}-${index}-${Date.now()}`,
@@ -58,8 +54,8 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
             nutrition_estimate: { kcal: 500, protein_g: 30, fat_g: 10, carb_g: 50, fiber_g: 5, vegetables_g: 100, fruit_g: 0, added_sugar_g: 0, sodium_mg: 0 },
             fit_score: 95, 
             warnings_or_notes: [],
-            // Truyền cả 2 vào hàm lấy ảnh
-            image_url: getRealFoodImage(englishName, category), 
+            // Truyền từ khóa siêu ngắn vào hàm lấy ảnh
+            image_url: getRealFoodImage(searchKey), 
         };
     });
 
@@ -82,19 +78,23 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     Tạo thực đơn 1 món cho bữa ${input.meal_type}.
     Khách hàng: ${input.user_profile?.demographics?.sex}, Mục tiêu: ${input.user_profile?.goals?.primary_goal}.
     
-    CẤU HÌNH HÌNH ẢNH (QUAN TRỌNG):
-    1. "image_keyword_en": Dịch tên món sang Tiếng Anh. Thêm tính từ chỉ màu sắc/nguyên liệu chính.
-       - Ví dụ: "Sinh tố bơ" -> "Green Avocado Smoothie" (Đừng chỉ ghi "Smoothie").
-       - "Cháo bí đỏ" -> "Yellow Pumpkin Soup".
-    2. "image_category": Chọn 1 nhóm an toàn: "soup", "drink", "salad", "rice", "noodle", "meat", "fish", "cake", "fruit".
+    YÊU CẦU TỐI QUAN TRỌNG VỀ ẢNH ("image_search_term"):
+    - Hãy đóng vai một chuyên gia tìm kiếm ảnh Stock.
+    - Cung cấp 1 từ khóa Tiếng Anh CỰC NGẮN (Tối đa 2 từ) mô tả loại món ăn và màu sắc chủ đạo.
+    - TUYỆT ĐỐI KHÔNG liệt kê nguyên liệu phụ.
+    
+    VÍ DỤ MẪU:
+    - Món: "Sinh tố chuối, rau bina, gừng" -> Từ khóa: "Green Smoothie" (Đừng ghi Banana Spinach...)
+    - Món: "Cháo yến mạch táo quế" -> Từ khóa: "Oatmeal"
+    - Món: "Cơm gạo lứt gà nướng" -> Từ khóa: "Chicken Rice"
+    - Món: "Canh bí đỏ thịt bằm" -> Từ khóa: "Pumpkin Soup"
     
     JSON Mẫu: 
     { 
       "advice": "...", 
       "meals": [{ 
         "name": "Tên món (Việt)", 
-        "image_keyword_en": "Green Avocado Smoothie",
-        "image_category": "drink",
+        "image_search_term": "Green Smoothie", 
         "ingredients": "...", 
         "calories": "..." 
       }] 
@@ -128,6 +128,6 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
-  // Khi tạo lại ảnh, dùng tên món làm từ khóa chính
-  return getRealFoodImage(meal.recipe_name, "dish");
+  // Fallback an toàn khi tạo lại ảnh
+  return getRealFoodImage("healthy food"); 
 };
