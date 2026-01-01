@@ -17,37 +17,30 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
     const parsedJson = JSON.parse(geminiText);
 
     // Chuyển đổi định dạng JSON đơn giản thành SuggestionResponse đầy đủ
-    const suggestedMeals: SuggestionMeal[] = parsedJson.meals.map((meal: any) => ({
-      recipe_id: meal.name.replace(/\s+/g, '-').toLowerCase(), // Tạo ID đơn giản
-      recipe_name: meal.name,
-      short_description: meal.ingredients,
-      reason: parsedJson.advice, // Sử dụng advice làm lý do chung
-      how_it_supports_gut: parsedJson.advice,
-      fit_with_goal: parsedJson.advice,
-      main_ingredients_brief: meal.ingredients,
-      ingredients: meal.ingredients.split(', ').map((ing: string) => ({ name: ing.trim(), quantity: "" })), // Tách nguyên liệu
-      nutrition_estimate: {
-        kcal: parseInt(meal.calories.replace(/[^0-9]/g, '')) || 0,
-        protein_g: 0, fat_g: 0, carb_g: 0, fiber_g: 0,
-        vegetables_g: 0, fruit_g: 0, added_sugar_g: 0, sodium_mg: 0,
-      },
-      fit_score: 80, // Điểm mặc định
-      warnings_or_notes: [],
-      const suggestedMeals: SuggestionMeal[] = parsedJson.meals.map((meal: any, index: number) => {
-    // ... các đoạn code xử lý calories ở trên ...
-    const mealName = meal.name || "Món ăn dinh dưỡng"; // Đảm bảo có tên món
+    const suggestedMeals: SuggestionMeal[] = parsedJson.meals.map((meal: any) => {
+      const mealName = meal.name || "Món ăn dinh dưỡng"; // Đảm bảo có tên món
 
-    return {
-        // ... các trường khác giữ nguyên ...
+      return {
+        recipe_id: mealName.replace(/\s+/g, '-').toLowerCase(), // Tạo ID đơn giản
         recipe_name: mealName,
-        // ...
-
-        // ===> TÌM DÒNG image_url VÀ THAY THẾ BẰNG DÒNG DƯỚI ĐÂY <===
+        short_description: meal.ingredients,
+        reason: parsedJson.advice, // Sử dụng advice làm lý do chung
+        how_it_supports_gut: parsedJson.advice,
+        fit_with_goal: parsedJson.advice,
+        main_ingredients_brief: meal.ingredients,
+        ingredients: meal.ingredients.split(', ').map((ing: string) => ({ name: ing.trim(), quantity: "" })), // Tách nguyên liệu
+        nutrition_estimate: {
+          kcal: parseInt(meal.calories.replace(/[^0-9]/g, '')) || 0,
+          protein_g: 0, fat_g: 0, carb_g: 0, fiber_g: 0,
+          vegetables_g: 0, fruit_g: 0, added_sugar_g: 0, sodium_mg: 0,
+        },
+        fit_score: 80, // Điểm mặc định
+        warnings_or_notes: [],
         // Tạo đường dẫn ảnh động dựa trên tên món ăn.
         // Sử dụng dịch vụ placehold.co để tạo ảnh nhanh, đẹp, hỗ trợ tiếng Việt.
         image_url: `https://placehold.co/600x400/EF4444/FFFFFF/png?text=${encodeURIComponent(mealName)}&font=roboto`,
-    };
-    }));
+      };
+    });
 
     return {
       day_number: input.day_number,
