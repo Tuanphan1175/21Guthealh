@@ -19,7 +19,7 @@ const SINH_TO_XANH_RECIPE = `
 - 2 muỗng canh nước cốt chanh tươi
 - Chất tạo ngọt: Cỏ ngọt stevia / Đường mía nâu / Mật ong tự nhiên
 - Nước lọc và đá viên
-`;
+
 // --- BỘ KIẾN THỨC DINH DƯỠNG (ĐÃ NẠP TỪ TÀI LIỆU CỦA BẠN) ---
 const GUT_HEALTH_RULES = `
 QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
