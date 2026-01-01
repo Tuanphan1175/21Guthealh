@@ -1,12 +1,12 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
-// --- QUAN TRỌNG: DÁN KEY MỚI VÀO DÒNG DƯỚI ---
-const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; 
+// --- CẤU HÌNH ---
+// Hãy đảm bảo bạn đã dán Key MỚI vào đây
+const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// --- CẤU HÌNH ---
-// Sử dụng Model 1.5 Flash vì nó ổn định nhất cho Key mới (Chạy được mọi tài khoản)
-const MODEL_NAME = "gemini-1.5-flash";
+// SỬA LỖI 404: Đổi sang model 2.5 (Model xịn có trong tài khoản của bạn)
+const MODEL_NAME = "gemini-2.5-flash";
 
 // Hàm tạo ảnh (Pollinations AI)
 function getRealFoodImage(text: string): string {
@@ -63,14 +63,15 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     BẮT BUỘC trả về JSON mẫu: { "advice": "...", "meals": [{ "name": "...", "ingredients": "...", "calories": "..." }] }
   `;
 
-  // Kiểm tra xem người dùng đã dán key chưa
+  // Kiểm tra key
   if (API_KEY.includes("DÁN_KEY")) {
-      throw new Error("⚠️ Bạn chưa dán API Key mới vào file code!");
+      throw new Error("⚠️ Bạn quên dán API Key vào code rồi!");
   }
 
   try {
     console.log(`📡 Đang gọi model: ${MODEL_NAME}...`);
     
+    // Gọi model 2.5
     const response = await fetch(`${BASE_URL}/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
