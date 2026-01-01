@@ -1,11 +1,11 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-// Hãy đảm bảo bạn đã dán Key MỚI vào đây
-const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; 
+// Key mới của bạn (Đã hoạt động tốt)
+const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// SỬA LỖI 404: Đổi sang model 2.5 (Model xịn có trong tài khoản của bạn)
+// Model xịn (Đã kết nối thành công)
 const MODEL_NAME = "gemini-2.5-flash";
 
 // Hàm tạo ảnh (Pollinations AI)
@@ -14,17 +14,29 @@ function getRealFoodImage(text: string): string {
     return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&nologo=true&seed=${Math.floor(Math.random() * 9999)}`;
 }
 
+// Hàm làm sạch JSON (Nâng cấp để xử lý trường hợp AI nói linh tinh)
 function cleanGeminiResponse(text: string): string {
-  return text.replace(/```json/g, '').replace(/```/g, '').trim();
+  // Tìm điểm bắt đầu { và kết thúc } của JSON
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  
+  if (firstBrace !== -1 && lastBrace !== -1) {
+    return text.substring(firstBrace, lastBrace + 1);
+  }
+  return text; // Hy vọng nó đã sạch
 }
 
 function parseGeminiResponseToSuggestionResponse(geminiText: string, input: UserInput): SuggestionResponse {
   try {
     const cleanedText = cleanGeminiResponse(geminiText);
     const parsedJson = JSON.parse(cleanedText);
-    if (!parsedJson.meals || !Array.isArray(parsedJson.meals)) throw new Error("Thiếu dữ liệu meals");
+    
+    // Xử lý trường hợp AI trả về mảng thay vì object (đôi khi xảy ra)
+    const mealsData = Array.isArray(parsedJson) ? parsedJson : (parsedJson.meals || []);
+    
+    if (!Array.isArray(mealsData)) throw new Error("Không tìm thấy danh sách món ăn");
 
-    const suggestedMeals: SuggestionMeal[] = parsedJson.meals.map((meal: any, index: number) => {
+    const suggestedMeals: SuggestionMeal[] = mealsData.map((meal: any, index: number) => {
         const mealName = meal.name || "Món ăn dinh dưỡng";
         return {
             recipe_id: `meal-${input.day_number}-${index}-${Date.now()}`,
@@ -50,32 +62,39 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
       suggested_meals: suggestedMeals,
     };
   } catch (e) {
-    console.error("Lỗi xử lý:", e);
+    console.error("Lỗi xử lý JSON:", e);
+    console.log("Dữ liệu gốc từ AI:", geminiText); // Log ra để debug nếu cần
     throw e;
   }
 }
 
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
   const promptText = `
-    Đóng vai chuyên gia dinh dưỡng. Tạo thực đơn 1 món cho bữa ${input.meal_type}.
+    Bạn là một API JSON. Chỉ trả về JSON thuần túy. Không được chào hỏi.
+    Tạo thực đơn 1 món cho bữa ${input.meal_type}.
     Khách hàng: ${input.user_profile?.demographics?.sex}, Mục tiêu: ${input.user_profile?.goals?.primary_goal}.
     Ghi chú: ${input.personal_note || "Không"}.
-    BẮT BUỘC trả về JSON mẫu: { "advice": "...", "meals": [{ "name": "...", "ingredients": "...", "calories": "..." }] }
+    JSON Mẫu: { "advice": "Lời khuyên...", "meals": [{ "name": "Tên món", "ingredients": "Nguyên liệu", "calories": "500" }] }
   `;
 
   // Kiểm tra key
-  if (API_KEY.includes("DÁN_KEY")) {
-      throw new Error("⚠️ Bạn quên dán API Key vào code rồi!");
+  if (API_KEY.includes("DÁN_KEY") || API_KEY.length < 10) {
+      throw new Error("⚠️ Vui lòng dán API Key vào file code!");
   }
 
   try {
     console.log(`📡 Đang gọi model: ${MODEL_NAME}...`);
     
-    // Gọi model 2.5
     const response = await fetch(`${BASE_URL}/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+      body: JSON.stringify({ 
+        contents: [{ parts: [{ text: promptText }] }],
+        // CẤU HÌNH QUAN TRỌNG: Ép kiểu JSON
+        generationConfig: {
+            responseMimeType: "application/json"
+        }
+      })
     });
 
     if (!response.ok) {
