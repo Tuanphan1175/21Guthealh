@@ -1,12 +1,9 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-// Key của bạn (Giữ nguyên)
+// Key cũ của bạn vẫn dùng tốt, chỉ cần biết cách gọi
 const API_KEY = "AIzaSyCJ8-8krZ5lozRzQUP1QEppp1hinu1xpv4"; 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-
-// Model Xịn của bạn (ĐÃ SỬA TỪ 1.5 SANG 2.5)
-const MODEL_NAME = "gemini-2.5-flash"; 
 
 // Hàm tạo ảnh (Pollinations AI)
 function getRealFoodImage(text: string): string {
@@ -56,6 +53,10 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
 }
 
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
+  // DANH SÁCH MODEL ĐỂ THỬ (Tự động đổi nếu cái đầu bị lỗi)
+  // Ưu tiên 2.5 (xịn nhất), nếu không được thì thử 2.0 (dễ tính nhất)
+  const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash-exp"];
+  
   const promptText = `
     Đóng vai chuyên gia dinh dưỡng. Tạo thực đơn 1 món cho bữa ${input.meal_type}.
     Khách hàng: ${input.user_profile?.demographics?.sex}, Mục tiêu: ${input.user_profile?.goals?.primary_goal}.
@@ -63,30 +64,39 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     BẮT BUỘC trả về JSON mẫu: { "advice": "...", "meals": [{ "name": "...", "ingredients": "...", "calories": "..." }] }
   `;
 
-  try {
-    console.log(`📡 Đang gọi model: ${MODEL_NAME}...`);
-    
-    // Gọi đúng tên model 2.5
-    const response = await fetch(`${BASE_URL}/${MODEL_NAME}:generateContent?key=${API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-    });
+  let lastError: any = null;
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Google Error (${response.status}): ${errorText}`);
-    }
+  // Xóa khoảng trắng thừa trong Key nếu có
+  const cleanKey = API_KEY.trim();
 
-    const data = await response.json();
-    if (data.candidates && data.candidates.length > 0) {
-       return parseGeminiResponseToSuggestionResponse(data.candidates[0].content.parts[0].text, input);
+  for (const modelName of modelsToTry) {
+    try {
+      console.log(`📡 Đang gọi model: ${modelName}...`);
+      
+      const response = await fetch(`${BASE_URL}/${modelName}:generateContent?key=${cleanKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        referrerPolicy: "no-referrer", // <--- BÍ THUẬT: Giúp vượt qua lỗi chặn localhost
+        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+      });
+
+      if (!response.ok) {
+          const errorText = await response.text();
+          // Nếu lỗi 404 (Không tìm thấy model) hoặc 400 (Key lỗi), thử model tiếp theo
+          console.warn(`⚠️ Model ${modelName} lỗi: ${errorText}`);
+          throw new Error(errorText);
+      }
+
+      const data = await response.json();
+      if (data.candidates && data.candidates.length > 0) {
+         return parseGeminiResponseToSuggestionResponse(data.candidates[0].content.parts[0].text, input);
+      }
+    } catch (error: any) {
+      lastError = error;
     }
-    throw new Error("Không có dữ liệu trả về.");
-  } catch (error: any) {
-    console.error("Lỗi:", error);
-    throw error;
   }
+  
+  throw new Error(`Không thể tạo thực đơn. Lỗi cuối cùng: ${lastError?.message || "Vui lòng kiểm tra API Key"}`);
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
