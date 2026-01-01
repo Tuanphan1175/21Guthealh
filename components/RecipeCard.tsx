@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SuggestionMeal } from '../types';
 import { 
   RefreshCw, AlertCircle, ChevronDown, Info, 
-  Image as ImageIcon, Sparkles, Loader2, Wand2, 
+  Image as ImageIcon, Loader2, Wand2, 
   Check, UtensilsCrossed, Leaf, Egg, Droplets, 
   Wheat, Pizza, Download 
 } from 'lucide-react';
-import { generateMealImage } from '../geminiService'; // Import generateMealImage
+import { generateMealImage } from '../geminiService';
 import GutIcon from './GutIcon';
 
 interface RecipeCardProps {
@@ -48,58 +48,51 @@ const IngredientIcon: React.FC<{ name: string }> = ({ name }) => {
   return <div className="p-1.5 bg-slate-200 text-slate-700 rounded-lg border border-slate-300"><Check size={14} /></div>;
 };
 
-// Hàm chuyển đổi tiếng Việt có dấu sang tiếng Anh không dấu và thêm từ khóa chung
-const getUnsplashSearchKeyword = (mealName: string): string => {
-  let keyword = mealName
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/Đ/g, "D")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
-    .trim()
-    .replace(/\s+/g, ","); // Thay khoảng trắng bằng dấu phẩy cho Unsplash
-
-  // Thêm các từ khóa chung để tăng khả năng tìm thấy ảnh phù hợp
-  if (!keyword.includes("food")) keyword += ",food";
-  if (!keyword.includes("healthy")) keyword += ",healthy";
-  if (!keyword.includes("meal")) keyword += ",meal";
-
-  return keyword;
-};
-
 const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdate, loading: parentLoading }) => {
-  const unsplashKeyword = getUnsplashSearchKeyword(meal.recipe_name);
-  const defaultUnsplashUrl = `https://source.unsplash.com/featured/?${unsplashKeyword}`;
-  const fallbackImageUrl = "/default-meal.png"; // Đường dẫn đến ảnh dự phòng trong thư mục public
+  // Logic tạo ảnh dự phòng an toàn (luôn hoạt động)
+  const getSafePlaceholder = (text: string) => 
+    `https://placehold.co/800x600/f1f5f9/475569.png?text=${encodeURIComponent(text)}&font=roboto`;
 
-  const [imageUrl, setImageUrl] = useState<string>(meal.image_url || defaultUnsplashUrl);
-  const [imageError, setImageError] = useState<boolean>(false);
+  // State
+  const [imageUrl, setImageUrl] = useState<string>(meal.image_url || getSafePlaceholder(meal.recipe_name));
   const [generatingImage, setGeneratingImage] = useState(false);
+  
+  // Effect: Cập nhật ảnh khi props thay đổi (quan trọng khi đổi món)
+  useEffect(() => {
+    if (meal.image_url && meal.image_url.trim() !== "") {
+      setImageUrl(meal.image_url);
+    } else {
+      setImageUrl(getSafePlaceholder(meal.recipe_name));
+    }
+  }, [meal.image_url, meal.recipe_name]);
+
   const n = meal.nutrition_estimate;
   
-  const handleGenerateImage = async () => { // Make this async
+  const handleGenerateImage = async () => {
     if (generatingImage) return;
     setGeneratingImage(true);
-    setImageError(false); // Reset lỗi khi tạo ảnh mới
     try {
-      const newImageUrl = await generateMealImage(meal); // Call the API endpoint
+      // Gọi API tạo ảnh (hoặc giả lập tạo ảnh mới)
+      const newImageUrl = await generateMealImage(meal);
       setImageUrl(newImageUrl);
       if (onUpdate) {
         onUpdate({ ...meal, image_url: newImageUrl });
       }
     } catch (err) {
-      console.error("Failed to generate image from API:", err);
-      setImageError(true);
-      setImageUrl(fallbackImageUrl); // Fallback on API error
+      console.error("Failed to generate image:", err);
+      // Nếu lỗi, fallback về placeholder an toàn
+      setImageUrl(getSafePlaceholder(meal.recipe_name));
     } finally {
       setGeneratingImage(false);
     }
   };
 
-  const handleImageLoadError = () => { // Renamed to avoid confusion with API error
-    setImageError(true);
-    setImageUrl(fallbackImageUrl); // Sử dụng ảnh dự phòng khi có lỗi tải ảnh
+  const handleImageLoadError = () => {
+    // Nếu ảnh load lỗi, thay thế ngay bằng placeholder an toàn
+    // Tránh loop vô tận bằng cách kiểm tra xem URL hiện tại có phải là placeholder chưa
+    if (!imageUrl.includes('placehold.co')) {
+        setImageUrl(getSafePlaceholder(meal.recipe_name));
+    }
   };
 
   const getOverallScore = () => {
@@ -128,16 +121,17 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
     <div className="bg-white border-2 border-slate-200 rounded-[2.5rem] overflow-hidden shadow-md hover:shadow-xl hover:border-indigo-200 transition-all duration-300">
       {/* Image Section */}
       <div className="relative h-72 sm:h-[32rem] bg-slate-100 flex items-center justify-center overflow-hidden border-b-2 border-slate-100">
-        {imageUrl && !imageError ? (
-          <div className="relative w-full h-full group">
+        
+        {/* Luôn hiển thị thẻ img, nếu lỗi sẽ tự đổi src */}
+        <div className="relative w-full h-full group">
             <img 
               src={imageUrl} 
               alt={meal.recipe_name} 
               className="w-full h-full object-cover animate-in fade-in duration-700"
-              onError={handleImageLoadError} // Bắt lỗi tải ảnh
+              onError={handleImageLoadError} 
             />
             
-            {/* Overlay Actions for existing image */}
+            {/* Overlay Actions */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-6">
                <button 
                  onClick={handleGenerateImage}
@@ -150,34 +144,15 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
                <a 
                  href={imageUrl} 
                  download={`${meal.recipe_name}.png`}
+                 target="_blank"
+                 rel="noreferrer"
                  className="p-5 bg-white rounded-full text-emerald-700 shadow-2xl hover:scale-110 active:scale-95 transition-all"
-                 title="Tải ảnh về"
+                 title="Mở ảnh gốc"
                >
                  <Download size={24} />
                </a>
             </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-6 p-12 text-center w-full">
-            <div className="p-8 bg-white rounded-[3rem] text-slate-300 shadow-inner ring-4 ring-slate-50 border border-slate-100">
-              <ImageIcon size={56} />
-            </div>
-            <div className="space-y-3">
-              <h4 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">Hình ảnh trực quan</h4>
-              <p className="text-xs font-bold text-slate-500 max-w-[240px] mx-auto leading-relaxed">
-                {imageError ? "Không thể tải ảnh. Đang hiển thị ảnh dự phòng." : "Hệ thống sẽ phác họa món ăn dựa trên nguyên liệu thật từ công thức của bạn."}
-              </p>
-            </div>
-            <button
-              onClick={handleGenerateImage}
-              disabled={generatingImage}
-              className="px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-200 flex items-center gap-3 transition-all active:scale-95 disabled:opacity-50"
-            >
-              <Wand2 size={18} />
-              Tạo ảnh thực đơn
-            </button>
-          </div>
-        )}
+        </div>
 
         {/* Loading Overlay */}
         {generatingImage && (
@@ -193,8 +168,8 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ meal, index, onReplace, onUpdat
         {/* Fit Score Badge */}
         <div className="absolute top-8 left-8 z-10">
            <div className="px-5 py-2.5 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border-2 border-white flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${overallScore > 80 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)]' : 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.6)]'}`}></div>
-              <span className="text-xs font-black text-slate-900 uppercase tracking-widest">Độ khớp {Math.round(overallScore)}%</span>
+             <div className={`w-3 h-3 rounded-full ${overallScore > 80 ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)]' : 'bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.6)]'}`}></div>
+             <span className="text-xs font-black text-slate-900 uppercase tracking-widest">Độ khớp {Math.round(overallScore)}%</span>
            </div>
         </div>
       </div>
