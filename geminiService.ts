@@ -15,7 +15,6 @@ QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
    - BỮA SÁNG: Ưu tiên Sinh tố xanh (Green Smoothie), Protein thực vật lỏng.
    - CHẾ BIẾN: Chỉ Hấp, Luộc, Áp chảo nhẹ. Không chiên xào nhiều dầu.
    - THỰC PHẨM: Cá, hải sản, ức gà, rau xanh đậm, các loại hạt (lượng nhỏ).
-   - DẦU THỰC VẬT: Dầu ô liu, dầu lá tía tô, dầu mè, dầu dừa, dầu trái bơ
 
 2. GIAI ĐOẠN 2: PHỤC HỒI (Ngày 4 - Ngày 21):
    - Được phép ăn lại tinh bột tốt: Khoai lang, khoai từ, khoai sọ gạo trắng nguyên cám, bột sắn
@@ -31,10 +30,10 @@ QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
    - Đồ hộp, đồ chế biến sẵn (Xúc xích, thịt nguội).
 
 4. DANH SÁCH "ĐÈN XANH" (KHUYẾN KHÍCH):
-   - Chất béo tốt: Dầu Oliu, Dầu dừa, Quả bơ, Các loại hạt (Mắc ca, Óc chó, Hạnh nhân).
+   - Chất béo tốt: Dầu Oliu, Dầu dừa, Dầu mè, Dầu lá tía tô, Dầu quả bơ, Các loại hạt (Mắc ca, Óc chó, Hạnh nhân).
    - Đạm sạch: Cá hồi, Cá thu, Tôm, Gà thả vườn, Trứng gà ta.
    - Rau củ: Súp lơ, Cải xoăn (Kale), Rau Bina, Cà rốt, Củ dền.
-   - Trái cây ít ngọt: Ổi, Táo xanh, Bơ, Dâu tây, Việt quất.
+   - Trái cây ít ngọt: Ổi, Táo xanh, Bơ, Chuối xanh hấp, Đu đủ xanh, Dâu tây, Việt quất.
 `;
 
 // --- HÀM LẤY ẢNH (GIỮ NGUYÊN VÌ ĐANG CHẠY TỐT) ---
