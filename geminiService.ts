@@ -71,6 +71,36 @@ const SAFE_IMAGES: Record<string, string> = {
     "default": "healthy,food,dish"        // Mặc định
 };
 
+// --- HÀM GỌI API THÔNG MINH (TỰ ĐỘNG THỬ LẠI KHI LỖI 429) ---
+async function fetchWithRetry(url: string, options: any, retries = 3, delay = 3000): Promise<any> {
+    try {
+        const response = await fetch(url, options);
+
+        // Nếu gặp lỗi 429 (Hết hạn mức) và còn lượt thử
+        if (response.status === 429 && retries > 0) {
+            console.warn(`⚠️ Quá tải (429). Đang chờ ${delay}ms để thử lại... (Còn ${retries} lần)`);
+            // Chờ một chút
+            await new Promise(resolve => setTimeout(resolve, delay));
+            // Gọi lại chính hàm này (Đệ quy)
+            return fetchWithRetry(url, options, retries - 1, delay * 2); // Lần sau chờ lâu gấp đôi
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Google Error (${response.status}): ${errorText}`);
+        }
+        return response.json();
+
+    } catch (error: any) {
+        // Nếu lỗi mạng, cũng thử lại
+        if (retries > 0 && (error.message.includes("fetch") || error.message.includes("network"))) {
+             console.warn(`⚠️ Lỗi mạng. Đang thử lại...`);
+             await new Promise(resolve => setTimeout(resolve, delay));
+             return fetchWithRetry(url, options, retries - 1, delay);
+        }
+        throw error;
+    }
+}
 function getSafeImage(category: string): string {
     const key = category.trim().toLowerCase();
     const searchKeyword = SAFE_IMAGES[key] || SAFE_IMAGES["default"];
