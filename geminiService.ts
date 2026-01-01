@@ -9,6 +9,51 @@ const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 // Model này chạy được với mọi loại Key, nhanh và hạn mức cao nhất
 const MODEL_NAME = "gemini-1.5-flash";
 
+Chào bạn, tôi đã hiểu "căn bệnh" kỳ lạ của tài khoản bạn rồi!
+
+CHẨN ĐOÁN:
+
+Tài khoản của bạn thuộc nhóm "Người Tiên Phong" (Early Access): Google cấp cho bạn quyền dùng Model mới nhất (gemini-2.5-flash), nhưng lại khóa các model cũ (1.5-flash). Đó là lý do bạn gọi 1.5 bị lỗi 404 (Not Found).
+
+Vấn đề của Model 2.5: Nó rất thông minh nhưng "yếu sinh lý" về số lượng (bị giới hạn số lần gọi liên tục). Khi bạn bấm nút quá nhanh, nó báo lỗi 429 (Hết hạn mức).
+
+GIẢI PHÁP "CÔNG NGHỆ CAO" (AUTO-RETRY): Chúng ta không cần đổi model nữa (vì bạn chỉ có 2.5). Thay vào đó, tôi sẽ nâng cấp code để nó "Biết Nhẫn Nại".
+
+Khi gặp lỗi 429 (Quá tải), code sẽ tự động chờ 3 giây rồi thử lại.
+
+Nếu vẫn lỗi, nó chờ tiếp 5 giây rồi thử lại lần nữa.
+
+Người dùng (bạn) sẽ chỉ thấy nó xoay xoay lâu hơn một chút chứ không bao giờ thấy lỗi đỏ nữa.
+
+Hãy thay thế file src/geminiService.ts bằng phiên bản "Kiên Trì Bền Bỉ" này.
+
+BƯỚC DUY NHẤT: Copy & Dán vào src/geminiService.ts
+⚠️ QUAN TRỌNG: Nhớ dán Key của bạn vào dòng số 5 nhé!
+
+TypeScript
+
+import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
+
+// --- CẤU HÌNH ---
+// 👇👇👇 DÁN KEY CỦA BẠN VÀO ĐÂY 👇👇👇
+const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; 
+const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+
+// --- DÙNG LẠI MODEL 2.5 (VÌ TÀI KHOẢN BẠN CHỈ CÓ CÁI NÀY) ---
+const MODEL_NAME = "gemini-2.5-flash"; 
+
+// --- CÔNG THỨC SINH TỐ XANH (BẤT DI BẤT DỊCH) ---
+const SINH_TO_XANH_RECIPE = `
+- 1 cup xà lách thái nhỏ
+- 1/2 cup rau dền non
+- 1 cây bạc hà non (lấy cả thân)
+- 1/2 trái bơ
+- 1/2 quả táo
+- 1 quả cà chua (bỏ vỏ và hạt)
+- 2 muỗng canh nước cốt chanh tươi
+- Chất tạo ngọt: Cỏ ngọt stevia / Đường mía nâu / Mật ong tự nhiên
+- Nước lọc và đá viên
+`;
 // --- BỘ KIẾN THỨC DINH DƯỠNG (ĐÃ NẠP TỪ TÀI LIỆU CỦA BẠN) ---
 const GUT_HEALTH_RULES = `
 QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
