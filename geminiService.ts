@@ -1,19 +1,16 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
-// --- API KEY CỦA BẠN (Đã được làm sạch) ---
-const API_KEY = "AIzaSyCJ8-8krZ5lozRzQUP1QEppp1hinu1xpv4";
-
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-
-// --- HÀM UTILS ---
+// Hàm tạo ảnh placeholder (Giữ nguyên)
 function getSafeImageUrl(text: string): string {
     return `https://placehold.co/800x600/f8fafc/475569.png?text=${encodeURIComponent(text)}&font=roboto`;
 }
 
+// Hàm làm sạch JSON (Giữ nguyên)
 function cleanGeminiResponse(text: string): string {
   return text.replace(/```json/g, '').replace(/```/g, '').trim();
 }
 
+// Hàm phân tích JSON (Giữ nguyên logic)
 function parseGeminiResponseToSuggestionResponse(geminiText: string, input: UserInput): SuggestionResponse {
   try {
     const cleanedText = cleanGeminiResponse(geminiText);
@@ -62,15 +59,11 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
   }
 }
 
-// --- MAIN SERVICE ---
+// --- MAIN SERVICE (GỌI VỀ VERCEL FUNCTION) ---
 export const getMealSuggestions = async (input: UserInput): Promise<SuggestionResponse> => {
-  // Danh sách model khớp với tài khoản 2026 của bạn
-  const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash-exp"]; 
-  let lastError: any = null;
-
-  // Cấu trúc Prompt
   const userProfile = input.user_profile;
   const jsonStructure = `{ "advice": "Lời khuyên", "meals": [{ "name": "Tên món", "ingredients": "Nguyên liệu", "calories": "500" }] }`;
+  
   const promptText = `
     Đóng vai chuyên gia dinh dưỡng. Tạo thực đơn 1 món cho bữa ${input.meal_type}.
     Khách hàng: ${userProfile?.demographics?.sex}, ${userProfile?.goals?.primary_goal}.
@@ -78,38 +71,31 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     BẮT BUỘC trả về JSON đúng định dạng: ${jsonStructure}
   `;
 
-  // Xóa khoảng trắng thừa nếu có
-  const cleanKey = API_KEY.trim();
+  try {
+    // GỌI VỀ SERVER CỦA CHÍNH MÌNH (/api/gemini)
+    const response = await fetch('/api/gemini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: promptText })
+    });
 
-  for (const modelName of modelsToTry) {
-    console.log(`📡 Đang gọi model (No-Referrer): ${modelName}...`);
-    try {
-      // THỦ THUẬT QUAN TRỌNG: referrerPolicy: "no-referrer"
-      const response = await fetch(`${BASE_URL}/${modelName}:generateContent?key=${cleanKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        referrerPolicy: "no-referrer", // <--- Bí kíp để tránh lỗi localhost
-        body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        console.warn(`⚠️ Model ${modelName} lỗi (${response.status}): ${errText}`);
-        throw new Error(errText);
-      }
-
-      const data = await response.json();
-      if (data.candidates && data.candidates.length > 0) {
-         return parseGeminiResponseToSuggestionResponse(data.candidates[0].content.parts[0].text, input);
-      } else {
-         throw new Error("API trả về nhưng không có nội dung.");
-      }
-    } catch (error: any) {
-      lastError = error;
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Lỗi khi gọi Server");
     }
-  }
 
-  throw new Error(`Không thể tạo thực đơn: ${lastError?.message}`);
+    const data = await response.json();
+    
+    // Server Vercel trả về đúng cấu trúc của Google, ta chỉ việc lấy dùng
+    if (data.candidates && data.candidates.length > 0) {
+       return parseGeminiResponseToSuggestionResponse(data.candidates[0].content.parts[0].text, input);
+    } else {
+       throw new Error("Server không trả về nội dung.");
+    }
+  } catch (error: any) {
+    console.error("Lỗi:", error);
+    throw new Error(`Không thể tạo thực đơn: ${error.message}`);
+  }
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
