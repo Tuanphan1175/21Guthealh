@@ -1,22 +1,20 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; // <--- DÁN KEY CỦA BẠN
+const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; // <--- DÁN KEY CỦA BẠN
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const MODEL_NAME = "gemini-2.5-flash";
 
-// --- HÀM LẤY ẢNH (TỐI GIẢN HÓA) ---
-function getRealFoodImage(simpleKeyword: string): string {
-    // 1. Làm sạch từ khóa (chỉ giữ lại chữ cái và dấu phẩy)
-    // Ví dụ: "Green Smoothie" -> "Green,Smoothie"
-    const finalKeyword = simpleKeyword.trim().replace(/ /g, ',');
-
-    // 2. Thêm "food" để đảm bảo không ra vật thể lạ
-    // Cấu trúc: TỪ_KHÓA_NGẮN + food
-    const searchString = `${finalKeyword},food`; 
-
-    const randomLock = Math.floor(Math.random() * 9999);
-    return `https://loremflickr.com/800/600/${searchString}?lock=${randomLock}`;
+// --- HÀM LẤY ẢNH TỪ BING (SỨC MẠNH TÌM KIẾM THỰC TẾ) ---
+function getRealFoodImage(keyword: string): string {
+    // 1. Tạo từ khóa tìm kiếm chuẩn: Tên món + "food photography" để ra ảnh đẹp
+    const searchLayout = `${keyword} food photography delicious`;
+    const encodedQuery = encodeURIComponent(searchLayout);
+    
+    // 2. Sử dụng Bing Thumbnail Proxy (Tìm ảnh thực trên mạng)
+    // w=800, h=600: Kích thước ảnh
+    // c=7: Cắt ảnh (Crop) thông minh để vừa khung
+    return `https://tse4.mm.bing.net/th?q=${encodedQuery}&w=800&h=600&c=7&rs=1`;
 }
 
 function cleanGeminiResponse(text: string): string {
@@ -39,8 +37,9 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
     const suggestedMeals: SuggestionMeal[] = mealsData.map((meal: any, index: number) => {
         const mealName = meal.name || "Món ăn dinh dưỡng";
         
-        // Lấy từ khóa SIÊU NGẮN từ Gemini (Ví dụ: "Green Smoothie")
-        const searchKey = meal.image_search_term || "healthy food";
+        // Lấy tên tiếng Anh để tìm trên Bing cho chuẩn xác
+        // Nếu không có, dùng luôn tên tiếng Việt (Bing vẫn hiểu tốt!)
+        const searchKey = meal.image_search_term || mealName;
 
         return {
             recipe_id: `meal-${input.day_number}-${index}-${Date.now()}`,
@@ -54,7 +53,7 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
             nutrition_estimate: { kcal: 500, protein_g: 30, fat_g: 10, carb_g: 50, fiber_g: 5, vegetables_g: 100, fruit_g: 0, added_sugar_g: 0, sodium_mg: 0 },
             fit_score: 95, 
             warnings_or_notes: [],
-            // Truyền từ khóa siêu ngắn vào hàm lấy ảnh
+            // Truyền từ khóa vào hàm Bing
             image_url: getRealFoodImage(searchKey), 
         };
     });
@@ -78,23 +77,17 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     Tạo thực đơn 1 món cho bữa ${input.meal_type}.
     Khách hàng: ${input.user_profile?.demographics?.sex}, Mục tiêu: ${input.user_profile?.goals?.primary_goal}.
     
-    YÊU CẦU TỐI QUAN TRỌNG VỀ ẢNH ("image_search_term"):
-    - Hãy đóng vai một chuyên gia tìm kiếm ảnh Stock.
-    - Cung cấp 1 từ khóa Tiếng Anh CỰC NGẮN (Tối đa 2 từ) mô tả loại món ăn và màu sắc chủ đạo.
-    - TUYỆT ĐỐI KHÔNG liệt kê nguyên liệu phụ.
-    
-    VÍ DỤ MẪU:
-    - Món: "Sinh tố chuối, rau bina, gừng" -> Từ khóa: "Green Smoothie" (Đừng ghi Banana Spinach...)
-    - Món: "Cháo yến mạch táo quế" -> Từ khóa: "Oatmeal"
-    - Món: "Cơm gạo lứt gà nướng" -> Từ khóa: "Chicken Rice"
-    - Món: "Canh bí đỏ thịt bằm" -> Từ khóa: "Pumpkin Soup"
+    VỀ HÌNH ẢNH ("image_search_term"):
+    - Hãy cung cấp tên món ăn bằng Tiếng Anh ngắn gọn.
+    - Ví dụ: "Sinh tố chuối rau bina" -> "Banana Spinach Smoothie".
+    - "Cơm gà nướng" -> "Grilled Chicken Rice".
     
     JSON Mẫu: 
     { 
       "advice": "...", 
       "meals": [{ 
         "name": "Tên món (Việt)", 
-        "image_search_term": "Green Smoothie", 
+        "image_search_term": "English Dish Name", 
         "ingredients": "...", 
         "calories": "..." 
       }] 
@@ -128,6 +121,6 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
-  // Fallback an toàn khi tạo lại ảnh
-  return getRealFoodImage("healthy food"); 
+  // Tìm lại ảnh bằng chính tên món tiếng Việt khi bấm nút (Bing hiểu cả tiếng Việt!)
+  return getRealFoodImage(meal.recipe_name); 
 };
