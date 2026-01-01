@@ -1,21 +1,24 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; // <--- DÁN KEY CỦA BẠN VÀO ĐÂY
+const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; // <--- NHỚ DÁN KEY CỦA BẠN
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const MODEL_NAME = "gemini-2.5-flash";
 
-// --- HÀM TẠO ẢNH AI (DÙNG MODEL FLUX - KHÔNG CÒN LỖI BẢO TRÌ) ---
+// --- HÀM LẤY ẢNH (DÙNG KHO LOREMFLICKR ĐÃ SỬA LỖI MÈO) ---
 function getRealFoodImage(keyword: string): string {
-    // 1. Dọn dẹp từ khóa
-    const cleanKeyword = keyword.replace(/[^a-zA-Z0-9 ]/g, "").trim();
+    // 1. Dọn dẹp từ khóa: Xóa ký tự lạ
+    // Ví dụ: "Banana Smoothie" -> "Banana,Smoothie"
+    let cleanKeyword = keyword.replace(/[^a-zA-Z0-9 ]/g, "").trim().replace(/\s+/g, ',');
     
-    // 2. Tạo prompt tiếng Anh chuẩn cho Model Flux
-    const prompt = encodeURIComponent(`professional food photography of ${cleanKeyword}, michelin restaurant style, 8k, hyperrealistic, soft studio lighting, delicious`);
-    
-    // 3. Gọi Pollinations với Model FLUX (Quan trọng!)
-    const seed = Math.floor(Math.random() * 99999);
-    return `https://image.pollinations.ai/prompt/${prompt}?width=800&height=600&nologo=true&model=flux&seed=${seed}`;
+    // 2. MẸO QUAN TRỌNG: Chỉ thêm từ khóa "food". 
+    // TUYỆT ĐỐI KHÔNG thêm "cooked" hay "meal" để tránh bị lỗi ra ảnh lạ.
+    const finalKeyword = `${cleanKeyword},food,drink`; 
+
+    // 3. Tạo random lock để ảnh thay đổi khi bấm nút
+    const randomLock = Math.floor(Math.random() * 9999);
+
+    return `https://loremflickr.com/800/600/${finalKeyword}?lock=${randomLock}`;
 }
 
 function cleanGeminiResponse(text: string): string {
@@ -38,8 +41,8 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
     const suggestedMeals: SuggestionMeal[] = mealsData.map((meal: any, index: number) => {
         const mealName = meal.name || "Món ăn dinh dưỡng";
         
-        // Lấy tên Tiếng Anh từ Gemini để vẽ cho chuẩn
-        const imageKeyword = meal.image_keyword_en || "delicious healthy food";
+        // Lấy từ khóa Tiếng Anh từ Gemini
+        const imageKeyword = meal.image_keyword_en || "healthy food";
 
         return {
             recipe_id: `meal-${input.day_number}-${index}-${Date.now()}`,
@@ -53,7 +56,8 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
             nutrition_estimate: { kcal: 500, protein_g: 30, fat_g: 10, carb_g: 50, fiber_g: 5, vegetables_g: 100, fruit_g: 0, added_sugar_g: 0, sodium_mg: 0 },
             fit_score: 95, 
             warnings_or_notes: [],
-            image_url: getRealFoodImage(imageKeyword), // Vẽ bằng Model Flux
+            // Gọi hàm lấy ảnh đã sửa lỗi
+            image_url: getRealFoodImage(imageKeyword), 
         };
     });
 
@@ -76,16 +80,16 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
     Tạo thực đơn 1 món cho bữa ${input.meal_type}.
     Khách hàng: ${input.user_profile?.demographics?.sex}, Mục tiêu: ${input.user_profile?.goals?.primary_goal}.
     
-    QUAN TRỌNG:
-    - Hãy dịch tên món ăn sang Tiếng Anh (ngắn gọn, chính xác) và điền vào trường "image_keyword_en".
-    - Ví dụ: "Sinh tố bơ" -> "Avocado Smoothie". "Cháo gà" -> "Chicken Rice Porridge".
+    YÊU CẦU QUAN TRỌNG VỀ HÌNH ẢNH:
+    - Hãy dịch tên món ăn sang Tiếng Anh (ngắn gọn, chỉ lấy danh từ chính) và điền vào trường "image_keyword_en".
+    - Ví dụ: "Sinh tố bơ" -> "Avocado,Smoothie". "Cháo gà" -> "Chicken,Porridge". "Phở bò" -> "Beef,Noodle,Soup".
     
     JSON Mẫu: 
     { 
       "advice": "...", 
       "meals": [{ 
         "name": "Tên món (Việt)", 
-        "image_keyword_en": "English Name", 
+        "image_keyword_en": "English Keywords", 
         "ingredients": "...", 
         "calories": "..." 
       }] 
@@ -119,6 +123,5 @@ export const getMealSuggestions = async (input: UserInput): Promise<SuggestionRe
 };
 
 export const generateMealImage = async (meal: SuggestionMeal): Promise<string> => {
-  // Khi tạo lại ảnh, cũng dùng tên món tiếng Anh (nếu có lưu) hoặc tên tiếng Việt
   return getRealFoodImage(meal.recipe_name);
 };
