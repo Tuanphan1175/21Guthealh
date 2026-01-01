@@ -170,31 +170,6 @@ const DashboardScreen: React.FC<DashboardProps> = ({ userProfile: initialUserPro
 
     // Lấy món đầu tiên trong danh sách trả về (vì mình chỉ xin 1 món)
     return result.suggested_meals[0];
-  } string[]) {
-    if (!mealTargets || !currentUserProfile) throw new Error("Missing targets or user profile");
-    
-    const conditions = Object.keys(currentUserProfile.health_conditions.flags).filter(k => currentUserProfile.health_conditions.flags[k]);
-    const restrictions = Object.keys(currentUserProfile.dietary_preferences.restrictions).filter(k => currentUserProfile.dietary_preferences.restrictions[k]);
-
-    const input: UserInput = {
-       day_number: day,
-       meal_type: meal_slot,
-       user_goal: currentUserProfile.goals.primary_goal,
-       conditions: conditions,
-       dietary_restrictions: restrictions,
-       user_profile: currentUserProfile,
-       targets: mealTargets[meal_slot],
-       max_items: 1,
-       exclude_titles: excludeTitles,
-       personal_note: personalNote,
-       snack_timing: meal_slot === 'snack' ? snackTiming : undefined
-    };
-
-    const result = await getMealSuggestions(input);
-    if (!result.suggested_meals || result.suggested_meals.length === 0) {
-        throw new Error("Dữ liệu trả về rỗng.");
-    }
-    return result.suggested_meals[0];
   }
 
   async function rerollThisCard(meal_slot: MealSlot, itemIndex: number) {
