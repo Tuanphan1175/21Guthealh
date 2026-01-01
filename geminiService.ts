@@ -11,6 +11,28 @@ const MODEL_NAME = "gemini-1.5-flash";
 
 
 
+import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
+
+// --- CẤU HÌNH ---
+// 👇👇👇 DÁN KEY CỦA BẠN VÀO ĐÂY 👇👇👇
+const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; 
+const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+
+// --- DÙNG LẠI MODEL 2.5 (VÌ TÀI KHOẢN BẠN CHỈ CÓ CÁI NÀY) ---
+const MODEL_NAME = "gemini-2.5-flash"; 
+
+// --- CÔNG THỨC SINH TỐ XANH (BẤT DI BẤT DỊCH) ---
+const SINH_TO_XANH_RECIPE = `
+- 1 cup xà lách thái nhỏ
+- 1/2 cup rau dền non
+- 1 cây bạc hà non (lấy cả thân)
+- 1/2 trái bơ
+- 1/2 quả táo
+- 1 quả cà chua (bỏ vỏ và hạt)
+- 2 muỗng canh nước cốt chanh tươi
+- Chất tạo ngọt: Cỏ ngọt stevia / Đường mía nâu / Mật ong tự nhiên
+- Nước lọc và đá viên
+`;
 // --- BỘ KIẾN THỨC DINH DƯỠNG (ĐÃ NẠP TỪ TÀI LIỆU CỦA BẠN) ---
 const GUT_HEALTH_RULES = `
 QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
