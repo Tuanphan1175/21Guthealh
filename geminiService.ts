@@ -1,6 +1,6 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
-// --- DÁN API KEY CỦA BẠN VÀO ĐÂY ---
+// --- AIzaSyCJ8-8krZ5IozRzQUP1QEppp1hinu1xpv4 ---
 const API_KEY = "AIzaSy..."; // Giữ nguyên key bạn đang dùng
 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
