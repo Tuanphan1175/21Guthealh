@@ -33,7 +33,20 @@ function parseGeminiResponseToSuggestionResponse(geminiText: string, input: User
       },
       fit_score: 80, // Điểm mặc định
       warnings_or_notes: [],
-      image_url: "", // Sẽ được tạo bởi RecipeCard
+      const suggestedMeals: SuggestionMeal[] = parsedJson.meals.map((meal: any, index: number) => {
+    // ... các đoạn code xử lý calories ở trên ...
+    const mealName = meal.name || "Món ăn dinh dưỡng"; // Đảm bảo có tên món
+
+    return {
+        // ... các trường khác giữ nguyên ...
+        recipe_name: mealName,
+        // ...
+
+        // ===> TÌM DÒNG image_url VÀ THAY THẾ BẰNG DÒNG DƯỚI ĐÂY <===
+        // Tạo đường dẫn ảnh động dựa trên tên món ăn.
+        // Sử dụng dịch vụ placehold.co để tạo ảnh nhanh, đẹp, hỗ trợ tiếng Việt.
+        image_url: `https://placehold.co/600x400/EF4444/FFFFFF/png?text=${encodeURIComponent(mealName)}&font=roboto`,
+    };
     }));
 
     return {
