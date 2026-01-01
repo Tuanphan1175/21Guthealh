@@ -1,21 +1,8 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-// 👇👇👇 DÁN KEY CỦA BẠN VÀO GIỮA 2 DẤU NGOẶC KÉP 👇👇👇
-const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; 
-const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-
-// --- SỬA LỖI 429/404: DÙNG MODEL CHUẨN QUỐC TẾ (1.5 FLASH) ---
-// Model này chạy được với mọi loại Key, nhanh và hạn mức cao nhất
-const MODEL_NAME = "gemini-1.5-flash";
-
-
-
-import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
-
-// --- CẤU HÌNH ---
 // 👇👇👇 DÁN KEY CỦA BẠN VÀO ĐÂY 👇👇👇
-const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; 
+const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 // --- DÙNG LẠI MODEL 2.5 (VÌ TÀI KHOẢN BẠN CHỈ CÓ CÁI NÀY) ---
