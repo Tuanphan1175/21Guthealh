@@ -1,7 +1,7 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- DÁN CHÌA KHÓA MỚI CỦA BẠN VÀO ĐÂY ---
-const API_KEY = "DÁN_KEY_MỚI_VỪA_TẠO_VÀO_ĐÂY"; 
+const API_KEY = "AIzaSyAUOOs-fblTPpB4sLop2vjmj405U9nTZco"; 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 // Hàm tạo ảnh (Giữ nguyên)
