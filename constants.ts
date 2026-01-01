@@ -60,3 +60,69 @@ export const GOAL_DESCRIPTIONS: Record<string, string> = {
   "Giảm cholesterol": "Ưu tiên chất béo tốt (Omega-3), chất xơ hòa tan để kiểm soát mỡ máu và bảo vệ sức khỏe tim mạch.",
   "Khác...": "Tùy chỉnh mục tiêu riêng biệt của bạn để hệ thống có thể hiểu rõ nhu cầu cá nhân hóa."
 };
+
+export type Phase = 1 | 2 | 3;
+
+export function getPhase(day: number): Phase {
+  if (day <= 3) return 1;
+  if (day <= 14) return 2;
+  return 3; // 15-21
+}
+
+export function clampDay(day: number) {
+  if (!Number.isFinite(day)) return 1;
+  return Math.min(21, Math.max(1, Math.floor(day)));
+}
+
+export const PHASE_META: Record<Phase, {
+  title: string;
+  goal: string;
+  avoid: string[];
+  focus: string[];
+}> = {
+  1: {
+    title: "Phase 1: Thanh lọc / Reset (Ngày 1–3)",
+    goal: "Giảm gánh tiêu hoá, ổn định đường huyết, cắt tinh bột nhanh.",
+    avoid: [
+      "đường, nước ngọt, bánh kẹo",
+      "tinh bột nhanh (cơm/bún/phở/bánh mì…)",
+      "đồ chiên nhiều dầu xấu",
+      "rượu bia"
+    ],
+    focus: [
+      "đạm dễ tiêu",
+      "rau xanh, canh/súp ấm",
+      "chất béo tốt (ô-liu, bơ, MCT…)",
+      "uống đủ nước"
+    ],
+  },
+  2: {
+    title: "Phase 2: Phục hồi / Repair (Ngày 4–14)",
+    goal: "Phục hồi niêm mạc – hệ vi sinh, tăng chất xơ tốt có kiểm soát.",
+    avoid: [
+      "đồ siêu chế biến",
+      "quá nhiều gia vị cay/nóng nếu dạ dày nhạy",
+      "đường, rượu bia"
+    ],
+    focus: [
+      "xơ hoà tan + prebiotic vừa phải",
+      "đạm nạc & cá",
+      "probiotic từ thực phẩm nếu hợp",
+      "ăn chậm – ngủ đủ"
+    ],
+  },
+  3: {
+    title: "Phase 3: Ổn định / Tối ưu (Ngày 15–21)",
+    goal: "Đa dạng hoá thực phẩm tốt, ổn định phân – năng lượng, bền vững lâu dài.",
+    avoid: [
+      "ăn quá trễ",
+      "đường – tinh bột nhanh liều cao",
+      "đồ chiên đi chiên lại"
+    ],
+    focus: [
+      "đa dạng hoá rau/củ/quả phù hợp",
+      "cân bằng đạm–béo tốt–carb chậm (nếu dung nạp)",
+      "kỷ luật bữa ăn – vận động nhẹ"
+    ],
+  },
+};
