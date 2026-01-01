@@ -1,7 +1,7 @@
 import { UserInput, SuggestionResponse, SuggestionMeal } from "./types";
 
 // --- CẤU HÌNH ---
-const API_KEY = "DÁN_KEY_MỚI_CỦA_BẠN_VÀO_ĐÂY"; // <--- ĐỪNG QUÊN DÁN KEY CỦA BẠN
+const API_KEY = "AIzaSyDf3VXB6lOd39RwRe0_ggr3ckBaqCXvUnU"; // <--- ĐỪNG QUÊN DÁN KEY CỦA BẠN
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 const MODEL_NAME = "gemini-2.5-flash";
 
@@ -15,17 +15,18 @@ QUY TẮC DINH DƯỠNG "GUT HEALTH 21 NGÀY":
    - BỮA SÁNG: Ưu tiên Sinh tố xanh (Green Smoothie), Protein thực vật lỏng.
    - CHẾ BIẾN: Chỉ Hấp, Luộc, Áp chảo nhẹ. Không chiên xào nhiều dầu.
    - THỰC PHẨM: Cá, hải sản, ức gà, rau xanh đậm, các loại hạt (lượng nhỏ).
+   - DẦU THỰC VẬT: Dầu ô liu, dầu lá tía tô
 
 2. GIAI ĐOẠN 2: PHỤC HỒI (Ngày 4 - Ngày 21):
-   - Được phép ăn lại tinh bột tốt: Khoai lang, gạo lứt, yến mạch, quinoa (với lượng vừa phải).
-   - Đa dạng đạm: Cá hồi, gà thả vườn, hải sản.
+   - Được phép ăn lại tinh bột tốt: Khoai lang, khoai từ, khoai sọ gạo trắng nguyên cám, bột sắn
+   - Đa dạng đạm: Cá hồi, gà thả vườn, hải sản, trứng gà nuôi tự nhiên.
    - Tăng cường rau củ 5 màu sắc.
 
 3. DANH SÁCH "ĐÈN ĐỎ" (CẤM TRONG MỌI GIAI ĐOẠN):
    - Đường tinh luyện, bánh kẹo ngọt, nước ngọt có ga.
    - Sữa bò và chế phẩm từ sữa bò (trừ bơ Ghee).
    - Thịt đỏ nuôi công nghiệp (Heo, Bò công nghiệp).
-   - Lúa mì, Bắp (Ngô), Đậu nành (trừ loại lên men như Miso/Tempeh/Natto).
+   - Lúa mì, Bắp (Ngô), Đậu nành (trừ loại lên men như Miso/Tempeh/Natto), các loại đậu (đậu đỏ, đậu đen, đậu xanh...).
    - Dầu thực vật công nghiệp (Dầu nành, dầu hướng dương).
    - Đồ hộp, đồ chế biến sẵn (Xúc xích, thịt nguội).
 
